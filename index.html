@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bee Yard Databank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dk:#2b1a0c; --wood:#8b5a2b; --wood2:#7a4e24; --woodhi:#b07a3e; --honey:#f2c230; --honeydk:#b8860b;
+  --parch:#f6e7b8; --parch2:#ecd89e; --ink:#2b1a0c; --muted:#7a5230; --wax:#fff1c2; --bgc:#16301d; --leaf:#3f7a3a;
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bgc:#0f2414; } }
+:root[data-theme="dark"]{ --bgc:#0f2414; }
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bgc)}
+body{font-family:"VT323","Courier New",monospace;font-size:22px;line-height:1.2;color:var(--ink)}
+
+#track{position:fixed;top:0;left:0;height:100%;width:300%;display:flex;transition:transform .45s steps(9),filter .25s steps(4)}
+.scn{width:33.3334%;height:100%;flex:none;display:block}
+body.modal #track{filter:blur(5px) brightness(.55) saturate(.8)}
+body.modal.boxmode #track{filter:none}
+body.boxmode .backdrop{justify-content:flex-end}
+body.boxmode .shadow{width:min(360px,100%)}
+body.boxmode .body{padding:10px 12px}
+body.boxmode .panel{padding:4px 8px 6px}
+body.boxmode .inv-row{gap:8px}
+body.boxmode .inv-name{font-size:21px}
+body.boxmode .sq{width:30px;height:30px;font-size:11px}
+body.boxmode .qty b{min-width:30px;font-size:11px}
+body.boxmode .titlebar span{font-size:12px}
+body.boxmode .status span:last-child{display:none}
+body.boxmode #wx{display:none}
+.nav{position:fixed;top:50%;transform:translateY(-50%);width:50px;height:58px;padding:2px;cursor:pointer;z-index:2;background:var(--wood);border:4px solid var(--dk);box-shadow:inset -4px -4px 0 var(--wood2),inset 4px 4px 0 var(--woodhi),5px 5px 0 #0009}
+.nav.prev{left:calc(10px + env(safe-area-inset-left,0px))}
+.nav.next{right:calc(10px + env(safe-area-inset-right,0px))}
+.nav svg{width:100%;height:100%;display:block}
+.nav:hover svg,.nav:focus-visible svg{transform:scale(1.08)}
+.nav[hidden],body.modal .nav{display:none}
+@media (max-height:500px){.nav{width:40px;height:46px;padding:1px}}
+.hs{fill:transparent;stroke:transparent;stroke-width:6;cursor:pointer;outline:none}
+.hs:hover,.hs:focus-visible{fill:#fff2;stroke:var(--honey);stroke-dasharray:14 8;animation:march .6s steps(4) infinite}
+@keyframes march{to{stroke-dashoffset:-22}}
+
+/* popup: wooden pixel frame */
+.backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  padding:calc(10px + env(safe-area-inset-top,0px)) calc(10px + env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) calc(10px + env(safe-area-inset-left,0px))}
+body.modal .backdrop{display:flex}
+.shadow{width:min(780px,100%);max-height:100%;display:flex;filter:drop-shadow(10px 10px 0 #0009);animation:pop .18s steps(3)}
+@keyframes pop{from{transform:scale(.6);opacity:0}}
+.notch{clip-path:polygon(0 8px,8px 8px,8px 0,calc(100% - 8px) 0,calc(100% - 8px) 8px,100% 8px,100% calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 8px),0 calc(100% - 8px))}
+.win{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--dk);padding:4px}
+.win-in{flex:1;min-height:0;display:flex;flex-direction:column;padding:8px 10px 6px;
+  background:repeating-linear-gradient(0deg,var(--wood) 0 10px,var(--wood2) 10px 12px,var(--wood) 12px 22px,var(--woodhi) 22px 24px)}
+.titlebar{display:flex;align-items:center;gap:10px;background:var(--honey);border:4px solid var(--dk);
+  box-shadow:inset -4px -4px 0 var(--honeydk),inset 4px 4px 0 #ffe27a;padding:8px 8px 8px 12px;margin-bottom:8px}
+.titlebar .sw{width:22px;height:22px;border:3px solid var(--dk);flex:none;box-shadow:inset -3px -3px 0 #0004,inset 3px 3px 0 #fff5}
+.tt{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.tt small{font-size:19px;font-family:"VT323",monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.titlebar span{font-family:"Press Start 2P",monospace;font-size:13px;color:var(--dk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-top:2px}
+.xbtn{width:34px;height:32px;flex:none;background:var(--dk);color:var(--honey);border:0;cursor:pointer;font-family:"Press Start 2P",monospace;font-size:12px;padding:0}
+.xbtn:hover{background:#4a2e14}
+.body{flex:1;min-height:0;overflow:auto;background:var(--parch);border:4px solid var(--dk);
+  box-shadow:inset 4px 4px 0 var(--parch2);padding:14px 16px}
+.status{font-family:"Press Start 2P",monospace;font-size:8px;color:var(--wax);display:flex;justify-content:space-between;gap:10px;padding:8px 2px 2px;text-shadow:2px 2px 0 var(--dk)}
+
+.cols{display:grid;grid-template-columns:minmax(200px,240px) 1fr;gap:20px}
+@media (max-width:620px){.cols{grid-template-columns:1fr}}
+.info h2{font-family:"Press Start 2P",monospace;font-size:13px;margin:0 0 8px;line-height:1.4;color:var(--dk)}
+.info .sub{color:var(--muted);font-size:20px;margin-bottom:12px}
+.stat{margin-bottom:10px}
+.stat .k{font-family:"Press Start 2P",monospace;font-size:8px;color:var(--muted);margin-bottom:3px}
+.stat .v{font-size:25px}
+.bar{display:flex;gap:3px}
+.bar i{width:18px;height:14px;background:var(--parch2);border:2px solid var(--dk)}
+.bar i.on{background:var(--honey)}
+.panel{border:4px solid var(--dk);background:#fff8dc;padding:4px 12px 8px}
+.panel h3{font-family:"Press Start 2P",monospace;font-size:9px;margin:6px 0 4px;color:var(--muted)}
+.entry{padding:8px 0;border-bottom:3px dotted var(--parch2)}
+.entry:last-child{border-bottom:0}
+.entry .d{font-family:"Press Start 2P",monospace;font-size:10px;color:var(--leaf)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}
+.chip{background:var(--parch);border:2px solid var(--muted);padding:0 6px;font-size:19px}
+.empty{color:var(--muted)}
+.btn{font-family:"Press Start 2P",monospace;font-size:10px;cursor:pointer;padding:11px 13px;color:var(--dk);
+  background:var(--honey);border:3px solid var(--dk);box-shadow:inset -4px -4px 0 var(--honeydk),inset 4px 4px 0 #ffe27a}
+.btn:active{box-shadow:inset 4px 4px 0 var(--honeydk)}
+.btn.ghost{background:var(--parch2);box-shadow:inset -4px -4px 0 #cbb57a,inset 4px 4px 0 #fff3cc}
+:focus-visible{outline:3px dashed var(--dk);outline-offset:2px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+form{display:none}
+form.open{display:block;margin-top:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 14px}
+label{display:block;font-family:"Press Start 2P",monospace;font-size:8px;color:var(--muted);margin-bottom:5px}
+input,select,textarea{width:100%;font-family:"VT323",monospace;font-size:21px;background:#fffdf0;color:var(--ink);border-radius:0;padding:4px 7px;
+  border:3px solid var(--dk);box-shadow:inset 3px 3px 0 var(--parch2)}
+textarea{min-height:70px;resize:vertical}
+.full{grid-column:1/-1}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:none;z-index:9;
+  font-family:"Press Start 2P",monospace;font-size:10px;background:var(--honey);color:var(--dk);border:3px solid var(--dk);padding:10px 14px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;transition:filter .25s steps(4)}
+body.modal #fx,body.modal .wx{filter:blur(5px) brightness(.55)}
+.wx{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));
+  display:flex;align-items:center;gap:10px;background:var(--honey);border:4px solid var(--dk);
+  box-shadow:inset -4px -4px 0 var(--honeydk),inset 4px 4px 0 #ffe27a,6px 6px 0 #0008;padding:8px 12px 8px 10px;
+  font-family:"Press Start 2P",monospace;color:var(--dk);cursor:pointer;user-select:none}
+.wx svg{width:32px;height:32px;image-rendering:pixelated;flex:none}
+.wx .t{font-size:16px;line-height:1}
+.wx .c{font-size:8px;margin-top:6px;color:var(--muted)}
+@media (max-height:500px){.wx{padding:5px 8px}.wx svg{width:24px;height:24px}.wx .t{font-size:12px}}
+
+.bdg{cursor:pointer;animation:bob 1.4s steps(2) infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.styl{position:fixed;left:calc(12px + env(safe-area-inset-left,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  display:flex;align-items:center;gap:6px;background:var(--wood);border:4px solid var(--dk);padding:6px 8px;box-shadow:6px 6px 0 #0008}
+.styl span{font-family:"Press Start 2P",monospace;font-size:8px;color:var(--wax);text-shadow:2px 2px 0 var(--dk);margin-right:4px}
+.styl button{font-family:"Press Start 2P",monospace;font-size:10px;width:34px;height:30px;background:var(--parch2);border:3px solid var(--dk);cursor:pointer;padding:0}
+.styl button[aria-pressed="true"]{background:var(--honey)}
+body.modal .styl{display:none}
+.alerts{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.alert{display:flex;align-items:center;gap:8px;background:#fde3d8;border:3px solid #9c2a1a;padding:4px 8px;font-size:20px;color:#6b1a0e}
+.alert svg{width:24px;height:24px;flex:none}
+
+.secret{fill:transparent;cursor:default;outline:none}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:3px dotted var(--parch2)}
+.set-row:last-child{border-bottom:0}
+.set-row .lbl{font-size:23px}
+.set-row .hlp{font-size:18px;color:var(--muted)}
+.sw8{position:relative;width:76px;height:34px;flex:none;background:var(--parch2);border:3px solid var(--dk);cursor:pointer;padding:0;
+  font-family:"Press Start 2P",monospace;font-size:8px;color:var(--muted)}
+.sw8::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:22px;background:var(--dk)}
+.sw8[aria-checked="true"]{background:var(--honey);color:var(--dk)}
+.sw8[aria-checked="true"]::after{left:auto;right:3px}
+.sw8 span{position:absolute;top:10px}
+.sw8[aria-checked="true"] span{left:9px}.sw8[aria-checked="false"] span{right:7px}
+
+.langs{display:flex;gap:6px;flex:none}
+.lb{font-family:"Press Start 2P",monospace;font-size:10px;width:48px;height:34px;background:var(--parch2);color:var(--muted);border:3px solid var(--dk);cursor:pointer;padding:0}
+.lb[aria-pressed="true"]{background:var(--honey);color:var(--dk)}
+@media (max-width:620px){.set-row{flex-wrap:wrap}}
+
+.inv{display:flex;flex-direction:column}
+.inv-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:8px 0;border-bottom:3px dotted var(--parch2)}
+.inv-row:last-child{border-bottom:0}
+.inv-name{font-size:23px}
+.inv-note{font-size:18px;color:var(--muted)}
+.qty{display:flex;align-items:center;gap:4px}
+.qty b{font-family:"Press Start 2P",monospace;font-size:12px;min-width:38px;text-align:center;font-weight:normal}
+.sq{font-family:"Press Start 2P",monospace;font-size:12px;width:34px;height:34px;padding:0;cursor:pointer;color:var(--dk);
+  background:var(--parch2);border:3px solid var(--dk);box-shadow:inset -3px -3px 0 #cbb57a}
+.sq.del{background:#fde3d8;color:#9c2a1a;border-color:#9c2a1a;box-shadow:none}
+.inv-head{display:grid;grid-template-columns:1fr auto;font-family:"Press Start 2P",monospace;font-size:8px;color:var(--muted);padding-bottom:4px}
+
+.styles{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-bottom:10px}
+.styles span{font-family:"Press Start 2P",monospace;font-size:8px;color:var(--muted);margin-right:4px}
+.styles .lb{width:36px;height:30px}
+.head-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}
+.head-row .k,.s1 .k,.tile .k{font-family:"Press Start 2P",monospace;font-size:8px;color:var(--muted);margin-bottom:4px;line-height:1.4}
+.head-row .v{font-size:24px;display:flex;align-items:center;gap:6px}
+.qdot{width:16px;height:16px;border:3px solid var(--dk);display:inline-block}
+.panel+.panel,.panel+.actions{margin-top:12px}
+.ico{vertical-align:-3px;image-rendering:pixelated}
+.tr{display:inline-block;margin-left:4px}
+.yn{display:inline-flex;align-items:center;gap:5px}
+.warn{background:#fde3d8;outline:3px solid #9c2a1a;outline-offset:-3px}
+/* style 1 */
+.s1{display:flex;flex-direction:column;gap:12px;padding:6px 0}
+.s1-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.s1-grid>div{padding:6px 8px;border:3px solid var(--parch2)}
+.bees{display:inline-flex;gap:3px}.bees .off{opacity:.25;filter:grayscale(1)}
+.fbar{display:flex;gap:3px;flex-wrap:wrap;margin:4px 0}
+.fbar i,.leg i{width:14px;height:34px;border:2px solid var(--dk);display:inline-block}
+.leg i{width:12px;height:12px;vertical-align:-1px;margin-right:4px}
+.fb{background:#8a4b1c}.ff{background:#f2c230}.fo{background:#e9d9a0;background-image:radial-gradient(#2b1a0c 1px,transparent 1.5px);background-size:5px 5px}.fe{background:transparent}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:19px}
+.rate{display:grid;grid-template-columns:160px max-content 1fr;align-items:center;gap:8px;padding:3px 6px;font-size:21px}
+.pips{display:inline-flex;gap:3px}.pips i{width:16px;height:16px;border:2px solid var(--dk);background:var(--parch2)}.pips i.on{background:var(--honey)}
+/* style 2 */
+.s2{width:100%;border-collapse:collapse;font-size:21px}
+.s2 th{text-align:left;font-weight:normal;color:var(--muted);width:45%;padding:5px 8px 5px 4px;vertical-align:top}
+.s2 td{padding:5px 4px}.s2 tr{border-bottom:2px dotted var(--parch2)}
+/* style 3 */
+.s3{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;padding:6px 0}
+.tile{border:3px solid var(--dk);background:var(--parch);padding:6px 8px;min-height:76px;box-shadow:inset -3px -3px 0 var(--parch2)}
+.tile .v{font-family:"Press Start 2P",monospace;font-size:18px;margin-top:6px;display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.tile .v small{font-size:10px;color:var(--muted)}
+.tile .sm{font-family:"VT323",monospace;font-size:19px;overflow-wrap:anywhere;line-height:1.1}
+.tile.big{grid-column:1/-1;min-height:0}
+.trt{width:100%;border-collapse:collapse;font-size:19px}.trt th{font-family:"Press Start 2P",monospace;font-size:7px;color:var(--muted);text-align:left;padding:4px}
+.trt td{padding:4px;border-top:2px dotted var(--parch2)}
+.hist summary{cursor:pointer;font-family:"Press Start 2P",monospace;font-size:10px;color:var(--leaf);padding:8px 0}
+.hist{border-bottom:3px dotted var(--parch2)}
+form.mini{display:none}form.mini.open{display:block;margin-top:8px}
+.hlp{font-size:18px;color:var(--muted);margin:8px 0 0}
+@media (max-width:620px){.head-row{grid-template-columns:1fr 1fr}.rate{grid-template-columns:1fr auto auto}}
+
+.bees{align-items:center}.bees .half{display:inline-block;width:15px;overflow:hidden}.bnum{font-family:"Press Start 2P",monospace;font-size:11px;margin-left:8px;font-weight:normal}
+.frow{display:grid;grid-template-columns:110px max-content 28px 1fr;align-items:center;gap:8px;font-size:20px;margin:3px 0}
+.frow b{font-family:"Press Start 2P",monospace;font-size:11px;font-weight:normal;text-align:right}
+.frow .fbar{margin:0}.frow .fbar i{height:22px;width:13px}
+.dash{font-size:22px;color:var(--muted)}
+.sub-h{font-family:"Press Start 2P",monospace;font-size:8px;color:var(--dk);margin:12px 0 6px;padding-top:8px;border-top:3px dotted var(--parch2)}
+.panel h3+.sub-h{border-top:0;padding-top:0;margin-top:4px}
+.wt-now{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:6px 0 10px}
+.wt-now .big{font-family:"Press Start 2P",monospace;font-size:20px;margin-top:6px}
+.wt-now .k{font-family:"Press Start 2P",monospace;font-size:8px;color:var(--muted)}
+.lr{display:flex;gap:16px;font-size:21px}
+.wchart{display:flex;gap:10px;align-items:flex-end;height:150px;padding:8px 4px 0;border-bottom:3px solid var(--dk);overflow-x:auto}
+.wcol{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:56px}
+.wbar{width:30px;background:var(--honey);border:3px solid var(--dk);display:flex;flex-direction:column;justify-content:flex-end;min-height:6px;max-height:80px}
+.wbar i{display:block;background:var(--honeydk)}
+.wcol b{font-family:"Press Start 2P",monospace;font-size:9px;font-weight:normal;margin-top:4px}
+.wcol small{font-size:15px;color:var(--muted);line-height:1}
+@media (max-width:620px){.frow{grid-template-columns:80px max-content 24px 1fr}}
+.hi{color:#9c2a1a;font-weight:bold}.treated{font-size:16px;color:var(--leaf)}
+.pips i.half{background:linear-gradient(90deg,var(--honey) 50%,var(--parch2) 50%)}
+.rate .num{font-family:"Press Start 2P",monospace;font-size:10px;margin-left:8px}
+.fbar i.hf{background-image:linear-gradient(90deg,transparent 50%,#fff8dc 50%)}
+.fbar i.fo.hf{background-image:linear-gradient(90deg,transparent 50%,#fff8dc 50%),radial-gradient(#2b1a0c 1px,transparent 1.5px);background-size:100% 100%,5px 5px}
+
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tab{font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 10px;cursor:pointer;background:var(--parch2);color:var(--muted);border:3px solid var(--dk)}
+.tab[aria-selected="true"]{background:var(--honey);color:var(--dk)}
+.cmp{display:flex;flex-direction:column;gap:6px}
+.cmp-row{display:grid;grid-template-columns:110px 1fr 110px;align-items:center;gap:10px;font-size:20px}
+.cn{display:flex;align-items:center;gap:6px}.sw2{width:12px;height:12px;border:2px solid var(--dk);display:inline-block;flex:none}
+.cbar{display:flex;height:18px;border:3px solid var(--dk);background:var(--parch2)}
+.cbar .cl{background:var(--honeydk)}.cbar .cr{background:var(--honey)}
+.cv{font-family:"Press Start 2P",monospace;font-size:10px;text-align:right;white-space:nowrap}
+.tscroll{overflow-x:auto}
+.plants{display:flex;flex-direction:column}
+.plant{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:3px dotted var(--parch2);font-size:21px}
+.plant:last-child{border-bottom:0}
+.tags{display:flex;gap:4px;flex:none}
+.tg{font-style:normal;font-family:"Press Start 2P",monospace;font-size:7px;padding:4px 5px;border:2px solid var(--dk)}
+.tg.n{background:var(--honey)}.tg.p{background:#e8a03a}.tg.h{background:#8a6b3a;color:#fff}
+.src{display:flex;flex-direction:column;padding:6px 0;border-bottom:3px dotted var(--parch2)}
+.src a{color:var(--dk);font-size:21px}.src small{font-size:16px;color:var(--muted)}
+@media (max-width:620px){.cmp-row{grid-template-columns:80px 1fr 90px}}
+
+body.modal.carmode #track{filter:none}
+body.carmode .backdrop{justify-content:flex-start}
+body.carmode .shadow{width:min(460px,100%)}
+body.carmode .body{padding:10px 12px}
+body.carmode .cmp-row{grid-template-columns:96px 1fr 86px;gap:6px;font-size:19px}
+body.carmode .status span:last-child{display:none}
+body.carmode #wx{display:none}
+
+.pq{padding:8px 0 10px;border-bottom:3px dotted var(--parch2)}.pq:last-child{border-bottom:0}
+.pq-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:21px}
+.pq-top b{font-family:"Press Start 2P",monospace;font-size:11px;font-weight:normal}
+.pq-from{font-size:19px;color:var(--muted);margin:2px 0 6px}
+.pq-sc .k{font-family:"Press Start 2P",monospace;font-size:7px;color:var(--muted)}
+.pq .rate{grid-template-columns:130px max-content 1fr}
+.pqtag{display:inline-block;font-family:"Press Start 2P",monospace;font-size:7px;background:var(--honey);border:2px solid var(--dk);padding:3px 5px;margin-bottom:4px}
+.titlebar,.status{flex:none}
+.pqtag.split{background:#bfe3b0}
+.tagrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.tagrow .pqtag{margin:0;font-size:8px;padding:5px 7px}
+.pn{font-size:18px;color:var(--muted);margin-top:3px;line-height:1.1}
+.ped{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:19px;margin:0 0 8px}.ped em{font-style:normal;font-family:"Press Start 2P",monospace;font-size:7px;color:var(--muted);margin-right:5px}
+
+.qin{width:58px;font-family:"Press Start 2P",monospace;font-size:11px;text-align:center;padding:6px 2px}
+.unit{font-family:"Press Start 2P",monospace;font-size:9px}
+.inv-row.brow .sw8{justify-self:end}
+.hl{display:block;font-style:normal;font-family:"Press Start 2P",monospace;font-size:6px;margin-top:3px}.hl.h{color:var(--leaf)}.hl.l{color:#9c2a1a}
+.trt tr.grp td{font-family:"Press Start 2P",monospace;font-size:7px;color:var(--muted);padding-top:12px;border-top:3px solid var(--dk)}
+
+.hv-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:3px dotted var(--parch2);font-size:20px}
+.hv-row:last-child{border-bottom:0}.hv-row b{font-family:"Press Start 2P",monospace;font-size:10px;font-weight:normal}
+.hv-row .big{font-family:"Press Start 2P",monospace;font-size:14px}
+.hv-tot{font-size:21px;margin:4px 0 6px}.hv-tot b{font-family:"Press Start 2P",monospace;font-size:14px;font-weight:normal}
+</style>
+</head>
+<body>
+<div id="track">
+<svg id="scene" class="scn" viewBox="0 0 1448 1086" preserveAspectRatio="xMidYMid slice">
+  <image id="bgimg" href="" x="0" y="0" width="1448" height="1086"/>
+</svg>
+<svg id="scene-box" class="scn" viewBox="0 0 1448 1086" preserveAspectRatio="xMidYMid slice">
+  <image id="bgbox" href="" x="0" y="0" width="1448" height="1086"/>
+  <rect id="boxhs" class="hs" x="360" y="480" width="750" height="380" tabindex="0" role="button"/>
+</svg>
+<svg id="scene-mead" class="scn" viewBox="0 0 1448 1086" preserveAspectRatio="xMidYMid slice">
+  <image id="bgmead" href="" x="0" y="0" width="1448" height="1086"/>
+  <rect id="carhs" class="hs" x="1075" y="495" width="373" height="410" tabindex="0" role="button"/>
+</svg>
+</div>
+<button class="nav prev" id="prev" hidden><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="#f2c230" d="M5 1h1v6h-1v-1h-1v-1h-1v-2h1v-1h1z"/></svg></button>
+<button class="nav next" id="next"><svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="#f2c230" d="M2 1h1v1h1v1h1v2h-1v1h-1v1h-1z"/></svg></button>
+
+<canvas id="fx"></canvas>
+<div class="wx" id="wx" role="status" aria-live="polite" title="Weather in Vienna">
+  <svg id="wxi" viewBox="0 0 8 8" shape-rendering="crispEdges"></svg>
+  <div><div class="t" id="wxt">--°C</div><div class="c" id="wxc">Wien</div></div>
+</div>
+<div class="backdrop" id="bd">
+  <div class="shadow"><div class="win notch" role="dialog" aria-modal="true" aria-labelledby="wt"><div class="win-in notch">
+    <div class="titlebar"><i class="sw" id="wsw"></i><div class="tt"><span id="wt">Hive</span><small id="wtr"></small></div><button class="xbtn" id="x" aria-label="Close">X</button></div>
+    <div class="body" id="wb"></div>
+    <div class="status"><span id="st1"></span><span id="st2"></span></div>
+  </div></div></div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+// ===== paste your Google Apps Script web-app link here (leave empty = save on this device only) =====
+const API_URL = "https://script.google.com/macros/s/AKfycbwas6mWoY6pdnIzRveetYcOCB5M2LrYyFjVkX4mKHDhFy0PtJQsZ5qFvyCSQglGsu8WTw/exec";
+// ===== languages =====
+const L={
+en:{syOk:"Saved to the shared sheet",syBusy:"Saving…",syOff:"Offline: saved on this device",syLoad:"Loading shared data…",notCounted:"not counted yet",yes:"Yes",no:"No",pqSet:"Test queens",pqSetH:"Mark the hives that have a Prüfkönigin",box:"Storage box",boxSub:"Everything inside",item:"Item",qty:"Qty",addItem:"+ Add item",itemName:"Item name",note:"Note",invEmpty:"The box is empty.",remove:"Remove",items:n=>n===1?"1 item":n+" items",confirmDel:x=>`Remove "${x}"?`,itemAdded:"Item added",prev:"Previous place",next:"Next place",places:["Bee yard","Storage box","Meadow"],hive:"Hive",str:"Colony strength",temper:"Temper",last:"Last check",qseen:"Queen seen",never:"Never",log:"Logbook",
+ empty:"No entries yet. Add the first inspection for this hive.",add:"+ New entry",close:"Close",newE:"New entry",date:"Date",
+ brood:"Brood",strength:"Strength (1 to 5)",honey:"Honey frames",feed:"Feeding",varroa:"Varroa",notes:"Notes",save:"Save entry",cancel:"Cancel",
+ phFeed:"e.g. 2 L syrup",phVar:"treatment or mite count",saved:"Entry saved",entries:n=>n===1?"1 entry":n+" entries",
+ preview:"Preview: saved on this device only",settings:"Settings",secret:"Secret menu",badges:"Warning badges",
+ badgesH:"Show queen, stinger and varroa badges above the hives",on:"ON",off:"OFF",lang:"Language",langH:"Language of the whole site",
+ setSaved:"Settings are saved on this device",chBrood:"Brood",chStr:"Strength",chHoney:n=>"Honey "+n+" frames",chFed:"Fed",
+ queen:"Queen",marked:c=>"marked "+c,unmarked:"unmarked",of5:"of 5",
+ al:{queen:"No eggs (day-old larvae)",sting:"Aggressive (temper 2 or below)",mite:"High varroa (over 10 mites / 50 g)"},
+ city:"Vienna",wx:{sun:"Sunny",part:"Partly cloudy",cloud:"Cloudy",fog:"Fog",rain:"Rain",storm:"Storm",snow:"Snow",pre:"preview"},
+ v:{Yes:"Yes",No:"No","Eggs + larvae":"Eggs + larvae",Eggs:"Eggs",Larvae:"Larvae",Capped:"Capped","None seen":"None seen",Calm:"Calm",Nervous:"Nervous",Aggressive:"Aggressive",
+    yellow:"yellow",blue:"blue",red:"red",z1:"Zander, 1 box",z2:"Zander, 2 boxes",nuc:"Nucleus"},
+ tr:{erwin:"Erwin colony",reds:"The Reds / Vörösek",abl:"Matthy's, made from Merkur",pluto:"From Martin. The propolis factory",martin:"From Martin",wil:"From Wilhelminenberg",mars:"William's, made from the Reds (Saturn)",martinReds:"From Martin. The Reds / Vörösek"}},
+de:{syOk:"In der gemeinsamen Tabelle gespeichert",syBusy:"Speichert…",syOff:"Offline: auf diesem Gerät gespeichert",syLoad:"Lade gemeinsame Daten…",notCounted:"noch nicht gezählt",yes:"Ja",no:"Nein",pqSet:"Prüfköniginnen",pqSetH:"Völker mit Prüfkönigin markieren",box:"Lagerkiste",boxSub:"Alles, was drin ist",item:"Gegenstand",qty:"Menge",addItem:"+ Neuer Gegenstand",itemName:"Bezeichnung",note:"Notiz",invEmpty:"Die Kiste ist leer.",remove:"Entfernen",items:n=>n===1?"1 Gegenstand":n+" Gegenstände",confirmDel:x=>`„${x}“ entfernen?`,itemAdded:"Gegenstand hinzugefügt",prev:"Vorheriger Ort",next:"Nächster Ort",places:["Bienenstand","Lagerkiste","Wiese"],hive:"Beute",str:"Volksstärke",temper:"Verhalten",last:"Letzte Kontrolle",qseen:"Königin gesehen",never:"Nie",log:"Stockkarte",
+ empty:"Noch keine Einträge. Trag die erste Durchsicht für dieses Volk ein.",add:"+ Neuer Eintrag",close:"Schließen",newE:"Neuer Eintrag",date:"Datum",
+ brood:"Brut",strength:"Stärke (1 bis 5)",honey:"Honigwaben",feed:"Fütterung",varroa:"Varroa",notes:"Notizen",save:"Speichern",cancel:"Abbrechen",
+ phFeed:"z. B. 2 L Sirup",phVar:"Behandlung oder Milbenzahl",saved:"Eintrag gespeichert",entries:n=>n===1?"1 Eintrag":n+" Einträge",
+ preview:"Vorschau: nur auf diesem Gerät gespeichert",settings:"Einstellungen",secret:"Geheimmenü",badges:"Warnsymbole",
+ badgesH:"Königin-, Stachel- und Varroa-Symbole über den Beuten anzeigen",on:"AN",off:"AUS",lang:"Sprache",langH:"Sprache der ganzen Seite",
+ setSaved:"Einstellungen werden auf diesem Gerät gespeichert",chBrood:"Brut",chStr:"Stärke",chHoney:n=>"Honig "+n+" Waben",chFed:"Gefüttert",
+ queen:"Königin",marked:c=>c+" gezeichnet",unmarked:"ungezeichnet",of5:"von 5",
+ al:{queen:"Keine Stifte",sting:"Stechlustig (Sanftmut 2 oder weniger)",mite:"Hoher Varroabefall (über 10 Milben / 50 g)"},
+ city:"Wien",wx:{sun:"Sonnig",part:"Teils bewölkt",cloud:"Bewölkt",fog:"Nebel",rain:"Regen",storm:"Gewitter",snow:"Schnee",pre:"Vorschau"},
+ v:{Yes:"Ja",No:"Nein","Eggs + larvae":"Eier + Larven",Eggs:"Eier",Larvae:"Larven",Capped:"Verdeckelt","None seen":"Keine gesehen",Calm:"Ruhig",Nervous:"Nervös",Aggressive:"Aggressiv",
+    yellow:"gelb",blue:"blau",red:"rot",z1:"Zander, 1 Zarge",z2:"Zander, 2 Zargen",nuc:"Ableger"},
+ tr:{erwin:"Erwin-Volk",reds:"Die Roten / Vörösek",abl:"Matthys, Ableger von Merkur",pluto:"Von Martin. Die Propolisfabrik",martin:"Von Martin",wil:"Vom Wilhelminenberg",mars:"Williams, Ableger der Roten (Saturn)",martinReds:"Von Martin. Die Roten / Vörösek"}},
+hu:{syOk:"Mentve a közös táblázatba",syBusy:"Mentés…",syOff:"Offline: ezen az eszközön mentve",syLoad:"Közös adatok betöltése…",notCounted:"még nincs megszámolva",yes:"Igen",no:"Nem",pqSet:"Tesztanyák",pqSetH:"A tesztanyás családok megjelölése",box:"Tárolóláda",boxSub:"Minden, ami benne van",item:"Eszköz",qty:"Db",addItem:"+ Új eszköz",itemName:"Megnevezés",note:"Megjegyzés",invEmpty:"A láda üres.",remove:"Törlés",items:n=>n+" tétel",confirmDel:x=>`Törlöd: ${x}?`,itemAdded:"Eszköz hozzáadva",prev:"Előző hely",next:"Következő hely",places:["Méhes","Tárolóláda","Rét"],hive:"Kaptár",str:"Családerősség",temper:"Viselkedés",last:"Utolsó ellenőrzés",qseen:"Anya látva",never:"Soha",log:"Napló",
+ empty:"Még nincs bejegyzés. Írd be az első ellenőrzést ennél a családnál.",add:"+ Új bejegyzés",close:"Bezárás",newE:"Új bejegyzés",date:"Dátum",
+ brood:"Fiasítás",strength:"Erősség (1–5)",honey:"Mézes keretek",feed:"Etetés",varroa:"Varroa",notes:"Megjegyzések",save:"Mentés",cancel:"Mégse",
+ phFeed:"pl. 2 l szirup",phVar:"kezelés vagy atkaszám",saved:"Bejegyzés mentve",entries:n=>n+" bejegyzés",
+ preview:"Előnézet: csak ezen az eszközön mentve",settings:"Beállítások",secret:"Titkos menü",badges:"Figyelmeztető jelek",
+ badgesH:"Anya-, fullánk- és varroajelek a kaptárak felett",on:"BE",off:"KI",lang:"Nyelv",langH:"Az egész oldal nyelve",
+ setSaved:"A beállítások ezen az eszközön vannak mentve",chBrood:"Fiasítás",chStr:"Erősség",chHoney:n=>"Méz: "+n+" keret",chFed:"Etetés",
+ queen:"Anya",marked:c=>c+" jelöléssel",unmarked:"jelöletlen",of5:"/ 5",
+ al:{queen:"Nincs pete (napos lárva)",sting:"Támadó (szelídség 2 vagy kevesebb)",mite:"Magas atkaszám (10 felett / 50 g)"},
+ city:"Bécs",wx:{sun:"Napos",part:"Részben felhős",cloud:"Felhős",fog:"Köd",rain:"Eső",storm:"Vihar",snow:"Hó",pre:"előnézet"},
+ v:{Yes:"Igen",No:"Nem","Eggs + larvae":"Pete + lárva",Eggs:"Pete",Larvae:"Lárva",Capped:"Fedett","None seen":"Nem láttam",Calm:"Nyugodt",Nervous:"Ideges",Aggressive:"Agresszív",
+    yellow:"sárga",blue:"kék",red:"piros",z1:"Zander, 1 fiók",z2:"Zander, 2 fiók",nuc:"Műraj"},
+ tr:{erwin:"Erwin-család",reds:"A Vörösek",abl:"Matthyé, Merkurból készült",pluto:"Martintól. A propoliszgyár",martin:"Martintól",wil:"A Wilhelminenbergről",mars:"Williamé, a Vörösekből (Saturn) készült",martinReds:"Martintól. A Vörösek"}}
+};
+let SET={badges:true,pq:false,lang:(navigator.language||"en").slice(0,2)};
+try{Object.assign(SET,JSON.parse(localStorage.getItem("beeyard-settings"))||{})}catch(e){}
+if(!L[SET.lang])SET.lang="en";
+function saveSet(){try{localStorage.setItem("beeyard-settings",JSON.stringify(SET))}catch(e){}}
+const T=()=>L[SET.lang];
+const V=s=>T().v[s]??s;
+
+const HIVES=[
+ {n:1,name:"Jupiter",flags:["queen","sting"],trivia:"erwin",color:"#c98a3e",box:[105,505,160,155],type:"z2",queen:[2025,"yellow"]},
+ {n:2,name:"Neptun",flags:["sting"],trivia:"erwin",color:"#2f63d6",box:[258,485,150,170],type:"z2",queen:[2026,"blue"]},
+ {n:3,name:"Venus",trivia:"erwin",color:"#dcb070",box:[400,520,115,135],type:"z1",queen:[2026,null]},
+ {n:4,name:"Uranus",trivia:"",color:"#c99a5a",box:[510,520,115,135],type:"z1",queen:[2025,"yellow"]},
+ {n:5,name:"Ablege",trivia:"abl",color:"#8a8a8a",box:[755,515,100,125],type:"nuc",queen:[2026,"blue"]},
+ {n:6,name:"Pluto",flags:["mite"],trivia:"pluto",color:"#c0703a",box:[850,505,130,135],type:"z2",queen:[2024,"red"]},
+ {n:7,name:"Saturn",trivia:"martinReds",color:"#5f8a5a",box:[990,505,128,143],type:"z2",queen:[2025,"yellow"]},
+ {n:8,name:"Merkur",trivia:"wil",color:"#3a8fe0",box:[1132,500,133,155],type:"z2",queen:[2026,"blue"]},
+ {n:9,name:"Mars",trivia:"mars",color:"#4a86d0",box:[1265,518,127,140],type:"z1",queen:[2026,null]}
+];
+const SEED={
+ 1:[{d:"2026-09-20",q:"No",b:"None seen",t:"Aggressive",s:3,h:"2",f:"3 L",v:"",n:"No queen, no eggs. Very defensive."},
+    {d:"2026-08-30",q:"No",b:"Eggs + larvae",t:"Calm",s:4,h:"0",f:"",v:"Formic acid strip",n:"Eggs seen, queen fine."}],
+ 2:[{d:"2026-09-21",q:"Yes",b:"Eggs + larvae",t:"Aggressive",s:5,h:"3",f:"",v:"",n:"Strongest colony."}],
+ 3:[{d:"2026-09-18",q:"No",b:"Larvae",t:"Calm",s:2,h:"0",f:"2 L",v:"",n:"Small, keep feeding."}],
+ 5:[{d:"2026-09-12",q:"Yes",b:"Eggs",t:"Calm",s:2,h:"0",f:"1 L",v:"",n:"New nuc from July split."}],
+ 6:[{d:"2026-09-15",q:"Yes",b:"Capped",t:"Calm",s:3,h:"1",f:"",v:"Mite drop 14/day",n:"Treat soon."}],
+ 8:[{d:"2026-09-20",q:"Yes",b:"Capped",t:"Calm",s:4,h:"2",f:"",v:"",n:""}]
+};
+let data;
+try{data=JSON.parse(localStorage.getItem("beeyard2"))}catch(e){}
+if(!data||typeof data!=="object")data=JSON.parse(JSON.stringify(SEED));
+function save(){try{localStorage.setItem("beeyard2",JSON.stringify(data))}catch(e){}}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=d=>{const [y,m,dd]=d.split("-");return `${dd}.${m}.${y}`};
+let lastFocus=null,openView=null;
+
+const scene=$("scene");
+function fit(){document.querySelectorAll(".scn").forEach(s=>s.setAttribute("preserveAspectRatio",innerWidth/innerHeight>=1.2?"xMidYMid slice":"xMidYMid meet"))}
+addEventListener("resize",fit);fit();
+
+const NS="http://www.w3.org/2000/svg";
+const hsEls=[];
+HIVES.forEach(h=>{
+  const [x,y,w,hh]=h.box;
+  const r=document.createElementNS(NS,"rect");
+  Object.entries({x,y,width:w,height:hh,class:"hs",tabindex:0,role:"button"}).forEach(([k,v])=>r.setAttribute(k,v));
+  r.addEventListener("click",()=>openHive(h.n));
+  r.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openHive(h.n)}});
+  scene.appendChild(r);hsEls.push([r,h]);
+});
+function labelHives(){hsEls.forEach(([r,h])=>r.setAttribute("aria-label",T().hive+" "+h.n+": "+h.name))}
+
+function bar(n){let s="";for(let i=1;i<=5;i++)s+=`<i class="${i<=n?"on":""}"></i>`;return `<div class="bar" aria-label="${n} ${T().of5}">${s}</div>`}
+const opts=(arr,sel)=>arr.map(o=>`<option value="${o}"${o===sel?" selected":""}>${esc(V(o))}</option>`).join("");
+
+// ===== translation of stored text (treatments, notes, items) =====
+// each entry: [en, de, hu]; stored text in any of the three is shown in the site language
+const TXT=[
+ ["Oxalic acid strips","Oxalsäure-Streifen","Oxálsavas csík"],
+ ["Formic acid 60 %","Ameisensäure 60 %","Hangyasav 60 %"],
+ ["on a sponge cloth (Wettex)","auf Wettex","mosogatórongyon (Wettex)"],
+ ["Total brood removal","Totale Brutentnahme","Teljes fiasításelvétel"],
+ ["all brood removed, completely new frames. Main varroa treatment.","gesamte Brut entnommen, komplett neue Rähmchen. Hauptbehandlung gegen Varroa.","a teljes fiasítás elvéve, teljesen új keretek. Ez volt a fő varroakezelés."],
+ ["bottle","Flasche","flakon"],
+ ["Sugar syrup","Zuckersirup","Cukorszirup"],
+ ["Sugar syrup 3:2","Zuckersirup 3:2","Cukorszirup 3:2"],
+ ["Strong pleasant smell, from goldenrod.","Starker angenehmer Duft, von der Goldrute.","Erős, kellemes illat, az aranyvesszőtől."],
+ ["Lots of brood on the two brood frames.","Viel Brut auf den zwei Brutwaben.","Sok fiasítás a két fiasításos kereten."],
+ ["New queen from Venus, just started laying.","Neue Königin aus Venus, hat gerade mit der Eiablage begonnen.","Új anya a Venusból, épp most kezdett petézni."],
+ ["Very aggressive, keep running at and bumping my hand. Temper has been 2 many times.","Sehr stechlustig, laufen mir ständig auf die Hand und stoßen dagegen. Sanftmut war schon oft 2.","Nagyon támadó, folyton a kezemre futnak és nekiütköznek. A szelídség már sokszor 2 volt."],
+ ["27.09.: not inspected, the hive got bumped from the side and the bees were upset. Fed 1 L sugar syrup 3:2.","27.09.: nicht durchgesehen, die Beute wurde seitlich angestoßen und die Bienen waren aufgeregt. 1 L Zuckersirup 3:2 gefüttert.","27.09.: nem ellenőriztem, oldalról meglöktem a kaptárt, és a méhek felidegesedtek. 1 l cukorszirupot kaptak (3:2)."],
+ ["Shallow supers","Flachzarge","Félfiókok"],["Shallow honey frames","Flache Honigrähmchen","Mézes félkeretek"],["Toolbox","Werkzeugkiste","Szerszámosláda"],
+ ["Entrances (Flugloch)","Flugloch","Röpnyílás"],["Syrup","Sirup","Szirup"],
+ ["Empty frames","Leere Rähmchen","Üres keretek"],["Frames with comb","Ausgebaute Waben","Kiépített keretek"],["Hive lids","Beutendeckel","Kaptárfedelek"],
+ ["Smoker","Smoker","Füstölő"],["Bee brush","Bienenbesen","Méhseprű"],["Hive tool","Stockmeißel","Kaptárvéső"],["Gloves","Handschuhe","Kesztyű"],["pair","Paar","pár"]];
+const TXTMAP=new Map();TXT.forEach(r=>r.forEach(s=>TXTMAP.set(s.toLowerCase(),r)));
+const STRIPS={en:"strips",de:"Streifen",hu:"csík"};
+function tx(s){if(!s)return s;const r=TXTMAP.get(String(s).trim().toLowerCase());if(r)return r[{en:0,de:1,hu:2}[SET.lang]];
+  const m=String(s).match(/^(\d+)\s*(strips?|Streifen|csík)$/i);if(m)return m[1]+" "+STRIPS[SET.lang];return s}
+// ===== hive datasheet =====
+const DS={
+en:{splitTag:"Split",made:"Split made",no_:"No. ",wt:"Weight",wL:"L",wR:"R",wTot:"Total",addWt:"+ Weight",noWt:"No weights yet.",varroa:"Varroa",wash:"Mite counts (powdered sugar)",treatedOn:"treated",wG:"Bees (g)",wM:"Mites",addWash:"+ Mite count",noWash:"No mite counts yet.",notes:"Notes",date:"Date",last:"Last inspection",qborn:"Queen born",mark:"Marking",unmarked:"unmarked",frames:"Frames",fTot:"in the hive",fOcc:"occupied",fFood:"food",fBrood:"brood",
+ pollen:"Pollen",pol:{low:"not enough",ok:"sufficient",na:"not observed"},qs:"Queen seen",eggs:"Eggs (day-old larvae)",capped:"Capped brood",cb:{ok:"enough",low:"too little"},
+ swarm:"Swarm cells",str:"Colony strength",supers:"Honey supers",tm:"Temper",ws:"Comb sitting",sw:"Swarm tendency",scale:"1 = poor, 4 = best",
+ added:"Added",aDrawn:"drawn frames",aFound:"foundation frames",aFood:"Food",what:"what",amount:"amount",nothing:"nothing",
+ treat:"Treatments",tType:"Treatment",tAmt:"Amount",tNote:"Notes",addTreat:"+ Treatment",noTreat:"No treatments yet.",
+ hist:"History",newInsp:"+ New inspection",yes:"Yes",no:"No",none:"none",style:"Sheet style",noData:"No inspection yet.",
+ colors:{white:"white",yellow:"yellow",red:"red",green:"green",blue:"blue"}},
+de:{splitTag:"Ableger",made:"Ableger gebildet",no_:"Nr. ",wt:"Gewicht",wL:"L",wR:"R",wTot:"Gesamt",addWt:"+ Gewicht",noWt:"Noch keine Gewichte.",varroa:"Varroa",wash:"Milbenzählung (Puderzucker)",treatedOn:"behandelt",wG:"Bienen (g)",wM:"Milben",addWash:"+ Milbenzählung",noWash:"Noch keine Zählungen.",notes:"Notizen",date:"Datum",last:"Letzte Durchsicht",qborn:"Königin Jahrgang",mark:"Zeichnung",unmarked:"ungezeichnet",frames:"Waben",fTot:"in der Beute",fOcc:"besetzt",fFood:"Futter",fBrood:"Brut",
+ pollen:"Pollen",pol:{low:"zu wenig",ok:"ausreichend",na:"nicht beobachtet"},qs:"Königin gesehen",eggs:"Stifte",capped:"Verdeckelte Brut",cb:{ok:"genug",low:"zu wenig"},
+ swarm:"Schwarmzellen",str:"Volksstärke",supers:"Honigräume",tm:"Sanftmut",ws:"Wabensitz",sw:"Schwarmneigung",scale:"1 = schlecht, 4 = sehr gut",
+ added:"Hinzugefügt",aDrawn:"ausgebaute Waben",aFound:"Mittelwände",aFood:"Futter",what:"was",amount:"Menge",nothing:"nichts",
+ treat:"Behandlungen",tType:"Behandlung",tAmt:"Menge",tNote:"Notizen",addTreat:"+ Behandlung",noTreat:"Noch keine Behandlungen.",
+ hist:"Verlauf",newInsp:"+ Neue Durchsicht",yes:"Ja",no:"Nein",none:"keine",style:"Blatt-Stil",noData:"Noch keine Durchsicht.",
+ colors:{white:"weiß",yellow:"gelb",red:"rot",green:"grün",blue:"blau"}},
+hu:{splitTag:"Ablegger",made:"Készítve",no_:"Sz. ",wt:"Súly",wL:"B",wR:"J",wTot:"Összesen",addWt:"+ Súly",noWt:"Még nincs mérés.",varroa:"Varroa",wash:"Atkaszámlálás (porcukor)",treatedOn:"kezelve",wG:"Méhek (g)",wM:"Atkák",addWash:"+ Atkaszámlálás",noWash:"Még nincs számlálás.",notes:"Megjegyzés",date:"Dátum",last:"Utolsó ellenőrzés",qborn:"Anya éve",mark:"Jelölés",unmarked:"jelöletlen",frames:"Keretek",fTot:"a kaptárban",fOcc:"megülve",fFood:"élelmes",fBrood:"fiasításos",
+ pollen:"Virágpor",pol:{low:"kevés",ok:"elegendő",na:"nem figyeltem meg"},qs:"Anya látva",eggs:"Pete (napos lárva)",capped:"Fedett fiasítás",cb:{ok:"elegendő",low:"kevés"},
+ swarm:"Anyabölcsők",str:"Családerősség",supers:"Mézkamrák",tm:"Szelídség",ws:"Lépen ülés",sw:"Rajzási hajlam",scale:"1 = gyenge, 4 = nagyon jó",
+ added:"Hozzáadva",aDrawn:"kiépített keret",aFound:"műlépes keret",aFood:"Élelem",what:"mit",amount:"mennyit",nothing:"semmi",
+ treat:"Kezelések",tType:"Kezelés",tAmt:"Mennyiség",tNote:"Megjegyzés",addTreat:"+ Kezelés",noTreat:"Még nincs kezelés.",
+ hist:"Előzmények",newInsp:"+ Új ellenőrzés",yes:"Igen",no:"Nem",none:"nincs",style:"Lap stílusa",noData:"Még nincs ellenőrzés.",
+ colors:{white:"fehér",yellow:"sárga",red:"piros",green:"zöld",blue:"kék"}}};
+const D=()=>DS[SET.lang];
+// International queen marking colours by last digit of the birth year:
+// 1/6 white, 2/7 yellow, 3/8 red, 4/9 green, 5/0 blue
+const QDIGIT={white:[1,6],yellow:[2,7],red:[3,8],green:[4,9],blue:[5,0]};
+function queenInfo(n){const i=(HIVEINFO[n]||[null,null]).slice();if(i[0]==null&&QDIGIT[i[1]])i[0]=yearFromColour(i[1]);return i}
+function yearFromColour(c,ref=new Date().getFullYear()){const d=QDIGIT[c];if(!d)return null;
+  for(let y=ref;y>ref-5;y--)if(d.includes(y%10))return y;return null}
+// Prüfköniginnen (test queens): hive number -> breeder
+const HIVEMADE={4:null,5:"2026-05-01",9:"2026-05-03"}; // splits (Ableger): date made, null = not given yet
+// honey harvest per year, kg (entered once a year); "split" = was a new split that year
+const HARVEST={2026:{1:30,2:30,3:30,4:"split",5:"split",6:30,7:30,8:20,9:"split"}};
+function harvestRows(n){return Object.keys(HARVEST).sort((a,b)=>b-a).filter(y=>HARVEST[y][n]!=null).map(y=>[y,HARVEST[y][n]])}
+const PRUEF={3:{from:"Mandl",drone:"14",num:"2322",ped:["ADxCRE25"]},4:{from:"Mandl",drone:"11",num:"2200",ped:["AHXWAL","ADxSN25"]},8:{from:"Mandl",drone:"25",num:"2343",ped:["ADxROM"]}};
+const QCOL={white:"#f4f4f0",yellow:"#f2c230",red:"#d23a2a",green:"#3f9a3a",blue:"#2f63d6"};
+
+const HIVEINFO={1:[2026,null],2:[2025,null],3:[null,"blue",72],4:[2025,"blue",51],5:[2026,"white"],6:[null,"?"],7:[null,"?"],8:[2025,"blue",22],9:[2026,null]};
+const SMALL=[4,5,9]; // Uranus, Ablege, Mars
+function STD_TR(){const o={};for(let n=1;n<=9;n++){const sm=SMALL.includes(n);
+  o[n]=[...(n===5?[{d:"2026-05-29",type:"VarroaMed",amt:"",note:"bottle"}]:[]),...(n===3?[{d:"2026-07-06",type:"Totale Brutentnahme",amt:"",note:"all brood removed, completely new frames. Main varroa treatment."}]:[]),{d:"2026-07-03",type:"Oxalsäure-Streifen",amt:(sm?2:4)+" Streifen",note:""},
+        {d:"2026-08-26",type:"Ameisensäure 60 %",amt:(sm?15:30)+" ml",note:"auf Wettex"},
+        {d:"2026-09-20",type:"Ameisensäure 60 %",amt:(sm?15:30)+" ml",note:"auf Wettex"}]}return o}
+const I=(d,ft,fo,ff,fb,pol,qs,eg,cb,sc,st,hs,tm,ws,sw,aD,aF,fw,fa)=>({d,ft,fo,ff,fb,pol,qs,eg,cb,sc,st,hs,tm,ws,sw,aD,aF,fw,fa});
+const SEED3={
+ insp:{
+  1:[{...I("2026-09-27",10,9,7,2,"na",true,true,null,null,null,null,3,4,null,0,0,"",""),n:"New queen from Venus, just started laying."}],
+  2:[{...I("2026-09-27",10,8,8,2,"na",true,true,"ok",0,2.5,0,2,3,null,0,0,"Zuckersirup","2 L"),n:"Lots of brood on the two brood frames."}],
+  3:[{...I("2026-09-27",10,8,7,3,"na",false,true,null,0,2.5,0,2,3,null,0,0,"",""),n:"Very aggressive, keep running at and bumping my hand. Temper has been 2 many times."}],
+  4:[{...I("2026-09-19",5,null,3,2,"na",true,true,null,null,3,null,3,4,null,0,0,"",""),n:"27.09.: not inspected, the hive got bumped from the side and the bees were upset. Fed 1 L sugar syrup 3:2."}],
+  5:[I("2026-09-27",5,4.5,3,2,"na",true,true,null,0,3,0,3.5,4,null,0,0,"","")],
+  6:[I("2026-09-27",10,9,8,2,"na",true,true,null,0,3,0,4,4,null,0,0,"","")],
+  7:[{...I("2026-09-27",9,8,5,2,"ok",false,true,null,0,2.5,0,4,4,null,0,0,"Zuckersirup","2 L"),pn:"Strong pleasant smell, from goldenrod."}],
+  8:[I("2026-09-27",10,8,8,2,"na",true,true,null,0,2,0,4,3.5,null,0,0,"","")],
+  9:[I("2026-09-27",6,6,4,2,"ok",true,true,null,0,3,0,4,4,null,0,0,"","")]},
+ tr:STD_TR(),
+ wt:{1:[{d:"2026-08-24",l:18,r:21},{d:"2026-09-07",l:18,r:21},{d:"2026-09-19",l:18,r:21}],2:[{d:"2026-08-24",l:15,r:17},{d:"2026-09-07",l:16,r:16},{d:"2026-09-19",l:14,r:17}],3:[{d:"2026-08-24",l:14,r:16},{d:"2026-09-07",l:16,r:16},{d:"2026-09-19",l:17,r:17}],4:[{d:"2026-08-24",l:12,r:17},{d:"2026-09-07",l:13,r:17},{d:"2026-09-19",l:12,r:18}],5:[{d:"2026-08-24",l:12,r:12},{d:"2026-09-07",l:13,r:14},{d:"2026-09-19",l:12,r:14}],6:[{d:"2026-08-24",l:19,r:19},{d:"2026-09-07",l:19,r:22},{d:"2026-09-19",l:16,r:21}],7:[{d:"2026-08-24",l:18,r:18},{d:"2026-09-07",l:18,r:20},{d:"2026-09-19",l:17,r:17}],8:[{d:"2026-08-24",l:20,r:17},{d:"2026-09-07",l:18,r:18},{d:"2026-09-19",l:16,r:19}],9:[{d:"2026-08-24",l:14,r:18},{d:"2026-09-07",l:17,r:20},{d:"2026-09-19",l:17,r:21}]},
+ wash:{5:[{d:"2026-08-24",g:50,m:0}],4:[{d:"2026-08-10",g:50,m:3},{d:"2026-08-24",g:50,m:6}],1:[{d:"2026-06-26",g:50,m:21},{d:"2026-08-10",g:50,m:2},{d:"2026-08-24",g:50,m:5}],2:[{d:"2026-06-18",g:50,m:17},{d:"2026-08-24",g:50,m:30}]}};
+// 27.09.2026: every colony fed sugar syrup 3:2 (2 water : 3 sugar), 2 L; splits only 1 L
+Object.entries(SEED3.insp).forEach(([n,l])=>l.forEach(e=>{if(e.d==="2026-09-27"){e.fw="Zuckersirup 3:2";e.fa=(n in HIVEMADE)?"1 L":"2 L"}}));
+let DB;try{DB=JSON.parse(localStorage.getItem("beeyard19"))}catch(e){}
+if(!DB||!DB.insp)DB=JSON.parse(JSON.stringify(SEED3));DB.tr=DB.tr||{};DB.wt=DB.wt||{};DB.wash=DB.wash||{};
+function saveDB(){try{localStorage.setItem("beeyard19",JSON.stringify(DB))}catch(e){}}
+const sorted=n=>(DB.insp[n]||[]).slice().sort((a,b)=>b.d.localeCompare(a.d));
+const MITE_LIMIT=10; // mites per 50 g sample
+const miteHigh=r=>r.m/(r.g||50)*50>MITE_LIMIT;
+function treatedAfter(n,r){return (DB.tr[n]||[]).filter(x=>x.d>r.d).sort((a,b)=>a.d.localeCompare(b.d))[0]}
+function flagsFor(n){const f=[];const l=sorted(n)[0];
+  if(l){if(!l.eg)f.push("queen");if(l.tm!=null&&l.tm<=2)f.push("sting")}
+  const w=(DB.wash[n]||[]).slice().sort((a,b)=>b.d.localeCompare(a.d))[0];
+  if(w&&miteHigh(w)&&!treatedAfter(n,w))f.push("mite");return f}
+let SHEET=1;
+
+// pixel helpers
+const ICO={
+ ok:["........","......kk",".....kgk","k...kgk.","kk.kgk..",".kkgk...","..kk....","........"],
+ no:["........",".kk..kk.",".krkkrk.","..krrk..","..krrk..",".krkkrk.",".kk..kk.","........"],
+ bee:["..ww.ww.",".wwkwww.","..kyyk..",".kkkkkk.",".yyyyyy.",".kkkkkk.","..yyyy..","...kk..."],
+ up:["........","...kk...","..kcck..","..kcck..",".kcccck.",".kcccck.","kcccccck","kkkkkkkk"],
+ dn:["kkkkkkkk","kcccccck",".kcccck.",".kcccck.","..kcck..","..kcck..","...kk...","........"]};
+const IC={k:"#2b1a0c",g:"#3f9a3a",r:"#c23a24",y:"#f2c230",w:"#e8f4ff"};
+function ico(n,s=18,cc){const m=ICO[n];return `<svg class="ico" width="${s}" height="${s}" viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">`+
+  m.map((r,j)=>[...r].map((c,i)=>c==="."?"":`<rect x="${i}" y="${j}" width="1" height="1" fill="${c==="c"?(cc||"#3f9a3a"):IC[c]}"/>`).join("")).join("")+`</svg>`}
+function trend(cur,prev,good=1){if(prev==null||cur==null||cur===prev)return"";const up=cur>prev;
+  const ok=up===(good>0);return `<span class="tr ${ok?"good":"bad"}" title="${prev} → ${cur}">${ico(up?"up":"dn",16,ok?"#3f9a3a":"#c23a24")}</span>`}
+const yn=v=>`<span class="yn">${ico(v?"ok":"no",16)}${v?D().yes:D().no}</span>`;
+function pips(v,max){if(v==null)return `<span class="dash">–</span>`;let s="";for(let i=1;i<=max;i++)s+=`<i class="${i<=v?"on":i-0.5===v?"half":""}"></i>`;return `<span class="pips" aria-label="${v}/${max}">${s}</span>`}
+function bees(v){if(v==null)return `<span class="dash">–</span>`;let s="";for(let i=1;i<=3;i++)s+=`<span class="${i<=v?"":i-0.5===v?"half":"off"}">${ico("bee",30)}</span>`;return `<span class="bees" aria-label="${v}/3">${s}<b class="bnum">${String(v).replace(".",SET.lang==="en"?".":",")} / 3</b></span>`}
+function slots(n,tot,cls){let s="";for(let i=0;i<tot;i++)s+=`<i class="${i+1<=n?cls:i<n?cls+" hf":"fe"}"></i>`;return `<span class="fbar">${s}</span>`}
+function frameBar(e){const tot=e.ft||0;let s="";const b=Math.min(e.fb,tot),f=Math.min(e.ff,tot-b),o=Math.max(0,Math.min(e.fo-b-f,tot-b-f));
+  for(let i=0;i<tot;i++)s+=`<i class="${i<b?"fb":i<b+f?"ff":i<b+f+o?"fo":"fe"}"></i>`;return `<span class="fbar">${s}</span>`}
+function addedTxt(e){const d=D(),p=[];if(e.aD)p.push(e.aD+" "+d.aDrawn);if(e.aF)p.push(e.aF+" "+d.aFound);if(e.fw||e.fa)p.push(d.aFood+": "+[tx(e.fw),e.fa].filter(Boolean).join(", "));return p.length?p.map(esc).join("<br>").replace(/&lt;br&gt;/g,"<br>"):d.nothing}
+function swarmTxt(e){return e.sc==null?"–":e.sc>0?`${ico("no",16)} ${e.sc}`:`${ico("ok",16)} ${D().none}`}
+function supersTxt(e){return e.hs==null?"–":e.hs>0?String(e.hs):D().none}
+
+// three sheet styles
+function sheet(e,p,style){const d=D();if(!e)return `<p class="empty">${d.noData}</p>`;p=p||{};
+ if(style===1){ // character sheet
+  return `<div class="s1">
+   <div class="s1-sec"><div class="k">${d.str}</div>${bees(e.st)}${trend(e.st,p.st)}</div>
+   <div class="s1-sec"><div class="k">${d.frames}: ${e.ft} ${d.fTot}</div>
+     <div class="frow"><span>${d.fOcc}</span>${slots(e.fo,e.ft,"fo")}<b>${e.fo??"–"}</b>${trend(e.fo,p.fo)}</div>
+     <div class="frow"><span>${d.fFood}</span>${slots(e.ff,e.ft,"ff")}<b>${e.ff??"–"}</b>${trend(e.ff,p.ff)}</div>
+     <div class="frow"><span>${d.fBrood}</span>${slots(e.fb,e.ft,"fb")}<b>${e.fb??"–"}</b>${trend(e.fb,p.fb)}</div></div>
+   <div class="s1-grid">
+     <div><div class="k">${d.qs}</div>${yn(e.qs)}</div>
+     <div class="${e.eg?"":"warn"}"><div class="k">${d.eggs}</div>${yn(e.eg)}</div>
+     <div class="${e.cb==="low"?"warn":""}"><div class="k">${d.capped}</div>${e.cb?esc(d.cb[e.cb]):"–"}</div>
+     <div><div class="k">${d.pollen}</div>${e.pol?esc(d.pol[e.pol]):"–"}${e.pn?`<div class="pn">${esc(tx(e.pn))}</div>`:""}</div>
+     <div class="${e.sc>0?"warn":""}"><div class="k">${d.swarm}</div>${swarmTxt(e)}</div>
+     <div><div class="k">${d.supers}</div>${supersTxt(e)}</div>
+   </div>
+   <div class="s1-sec"><div class="k">${d.scale}</div>
+     <div class="rate ${e.tm!=null&&e.tm<=2?"warn":""}"><span>${d.tm}</span>${pips(e.tm,4)}<span>${e.tm??""}${trend(e.tm,p.tm)}</span></div>
+     <div class="rate"><span>${d.ws}</span>${pips(e.ws,4)}<span>${e.ws??""}${trend(e.ws,p.ws)}</span></div>
+     <div class="rate"><span>${d.sw}</span>${pips(e.sw,4)}<span>${e.sw??""}${trend(e.sw,p.sw)}</span></div></div>
+   <div class="s1-sec"><div class="k">${d.added}</div><div>${addedTxt(e)}</div></div>
+   ${e.n?`<div class="s1-sec"><div class="k">${d.notes}</div><div>${esc(tx(e.n))}</div></div>`:""}</div>`}
+ if(style===2){ // Stockkarte table
+  const row=(k,v,w)=>`<tr class="${w?"warn":""}"><th>${k}</th><td>${v}</td></tr>`;
+  return `<table class="s2">
+   ${row(d.str,`${e.st} / 3 ${trend(e.st,p.st)}`)}
+   ${row(d.frames,`${e.ft} ${d.fTot}<br>${e.fo} ${d.fOcc} ${trend(e.fo,p.fo)} &nbsp; ${e.fb} ${d.fBrood} ${trend(e.fb,p.fb)} &nbsp; ${e.ff} ${d.fFood} ${trend(e.ff,p.ff)}`)}
+   ${row(d.qs,yn(e.qs))}${row(d.eggs,yn(e.eg),!e.eg)}${row(d.capped,esc(d.cb[e.cb]),e.cb==="low")}${row(d.pollen,esc(d.pol[e.pol]))}
+   ${row(d.swarm,e.sc>0?e.sc:d.none,e.sc>0)}${row(d.supers,supersTxt(e))}
+   ${row(d.tm,`${e.tm} / 4 ${trend(e.tm,p.tm)}`,e.tm<=2)}${row(d.ws,`${e.ws} / 4 ${trend(e.ws,p.ws)}`)}${row(d.sw,`${e.sw} / 4 ${trend(e.sw,p.sw)}`)}
+   ${row(d.added,addedTxt(e))}</table>`}
+ // style 3: tiles
+ const tile=(k,v,w,big)=>`<div class="tile ${w?"warn":""} ${big?"big":""}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+ return `<div class="s3">
+   ${tile(d.str,`${e.st}<small>/3</small>${trend(e.st,p.st)}`)}
+   ${tile(d.fOcc,`${e.fo}<small>/${e.ft}</small>${trend(e.fo,p.fo)}`)}
+   ${tile(d.fBrood,`${e.fb}${trend(e.fb,p.fb)}`)}
+   ${tile(d.fFood,`${e.ff}${trend(e.ff,p.ff)}`)}
+   ${tile(d.qs,ico(e.qs?"ok":"no",30))}
+   ${tile(d.eggs,ico(e.eg?"ok":"no",30),!e.eg)}
+   ${tile(d.capped,`<span class="sm">${esc(d.cb[e.cb])}</span>`,e.cb==="low")}
+   ${tile(d.pollen,`<span class="sm">${esc(d.pol[e.pol])}</span>`)}
+   ${tile(d.swarm,e.sc>0?e.sc:"0",e.sc>0)}
+   ${tile(d.supers,e.hs)}
+   ${tile(d.tm,`${e.tm}<small>/4</small>${trend(e.tm,p.tm)}`,e.tm<=2)}
+   ${tile(d.ws,`${e.ws}<small>/4</small>`)}
+   ${tile(d.sw,`${e.sw}<small>/4</small>`)}
+   ${tile(d.added,`<span class="sm">${addedTxt(e)}</span>`,false,true)}</div>`}
+
+function openHive(n){
+  if(!document.body.classList.contains("modal"))lastFocus=document.activeElement;
+  openView=["hive",n];const t=T(),d=D();
+  const h=HIVES[n-1],list=sorted(n),last=list[0],info=queenInfo(n),trs=(DB.tr[n]||[]).slice().sort((a,b)=>b.d.localeCompare(a.d));
+  document.body.classList.add("modal");
+  $("wt").textContent=h.name;$("wtr").textContent=t.tr[h.trivia]||"";$("wsw").style.background=h.color;
+  $("st1").textContent=t.entries(list.length);$("st2").textContent=syncLabel();$("x").setAttribute("aria-label",t.close);
+  const flags=flagsFor(n);
+  $("wb").innerHTML=`
+   ${alertsHTML({flags})}
+   ${n in HIVEMADE||PRUEF[n]?`<div class="tagrow">${n in HIVEMADE?`<div class="pqtag split">${d.splitTag}</div> `:""}${PRUEF[n]?`<div class="pqtag">${CT().pBadge}${PRUEF[n].from?` · ${CT().pFrom} ${esc(PRUEF[n].from)}`:""}</div>`:""}</div>`:""}
+   ${pedHTML(n)}
+   <div class="head-row">
+     <div><div class="k">${d.last}</div><div class="v">${last?fmt(last.d):t.never}</div></div>
+     ${n in HIVEMADE?`<div><div class="k">${d.made}</div><div class="v">${HIVEMADE[n]?fmt(HIVEMADE[n]):"?"}</div></div>`:""}
+     <div><div class="k">${d.qborn}</div><div class="v">${info[0]??"?"}</div></div>
+     <div><div class="k">${d.mark}</div><div class="v">${info[1]==="?"?"?":info[1]?`<i class="qdot" style="background:${QCOL[info[1]]}"></i>${d.colors[info[1]]}${info[2]!=null?` · ${d.no_}${info[2]}`:""}`:d.unmarked}</div></div>
+   </div>
+   <div class="panel">${sheet(last,list[1],SHEET)}</div>
+   ${harvestPanel(n)}
+   ${weightPanel(n)}
+   ${varroaPanel(n)}
+   ${list.length>1?`<div class="panel"><h3>${d.hist}</h3>${list.slice(1).map((e,i)=>`<details class="hist"><summary>${fmt(e.d)}</summary>${sheet(e,list[i+2],SHEET)}</details>`).join("")}</div>`:""}
+   <div class="actions"><button class="btn" id="add">${d.newInsp}</button><button class="btn ghost" id="close">${t.close}</button></div>
+   <form id="f"><div class="panel"><h3>${d.newInsp.replace("+ ","")}</h3>${inspForm(last)}
+     <div class="actions"><button class="btn" type="submit">${t.save}</button><button class="btn ghost" type="button" id="cancel">${t.cancel}</button></div></div></form>`;
+  const wb=$("wb");wb.scrollTop=0;
+  wireMini(n);
+  $("add").onclick=()=>{$("f").classList.add("open");$("add").style.display="none";$("f").scrollIntoView({block:"start"});$("i_d").focus()};
+  $("cancel").onclick=()=>{$("f").classList.remove("open");$("add").style.display=""};
+  $("close").onclick=closeHive;
+  $("f").onsubmit=e=>{e.preventDefault();const g=id=>$(id).value,num=id=>Math.max(0,parseFloat(g(id))||0);
+    (DB.insp[n]=DB.insp[n]||[]).push({d:g("i_d"),ft:num("i_ft"),fo:num("i_fo"),ff:num("i_ff"),fb:num("i_fb"),pol:g("i_pol"),qs:g("i_qs")==="1",eg:g("i_eg")==="1",
+      cb:g("i_cb"),sc:num("i_sc"),st:+g("i_st"),hs:num("i_hs"),tm:g("i_tm")?+g("i_tm"):null,ws:g("i_ws")?+g("i_ws"):null,sw:g("i_sw")?+g("i_sw"):null,aD:num("i_aD"),aF:num("i_aF"),fw:g("i_fw").trim(),fa:g("i_fa").trim(),n:g("i_n").trim(),pn:g("i_pn").trim()});
+    saveDB();drawBadges();openHive(n);toast(t.saved)};
+  $("x").focus();
+}
+function inspForm(l){const d=D(),t=T();l=l||{ft:10,fo:0,ff:0,fb:0,st:2,tm:3,ws:3,sw:3};
+ const sel=(id,opts,v)=>`<select id="${id}">${opts.map(([k,lab])=>`<option value="${k}"${String(k)===String(v)?" selected":""}>${esc(lab)}</option>`).join("")}</select>`;
+ const nm=(id,v,max)=>`<input type="number" id="${id}" min="0" step="0.5" ${max?`max="${max}"`:""} value="${v??0}" inputmode="numeric">`;
+ const f=(lab,inp,full)=>`<div${full?' class="full"':""}><label>${lab}</label>${inp}</div>`;
+ const YN=[["1",d.yes],["0",d.no]],R4=[["","–"],...[1,1.5,2,2.5,3,3.5,4].map(i=>[i,String(i)])];
+ return `<div class="grid">
+  ${f(t.date,`<input type="date" id="i_d" required value="${new Date().toISOString().slice(0,10)}">`)}
+  ${f(d.str+" (1–3)",sel("i_st",[1,1.5,2,2.5,3].map(i=>[i,String(i)]),l.st))}
+  ${f(d.frames+" "+d.fTot,nm("i_ft",l.ft))}${f(d.fOcc,nm("i_fo",l.fo))}${f(d.fBrood,nm("i_fb",l.fb))}${f(d.fFood,nm("i_ff",l.ff))}
+  ${f(d.qs,sel("i_qs",YN,"0"))}${f(d.eggs,sel("i_eg",YN,"1"))}
+  ${f(d.capped,sel("i_cb",[["ok",d.cb.ok],["low",d.cb.low]],"ok"))}
+  ${f(d.pollen,sel("i_pol",[["ok",d.pol.ok],["low",d.pol.low],["na",d.pol.na]],"ok"))}${f(d.pollen+": "+d.notes,`<input id="i_pn" maxlength="120">`)}
+  ${f(d.swarm,nm("i_sc",0))}${f(d.supers,nm("i_hs",l.hs||0))}
+  ${f(d.tm+" (1–4)",sel("i_tm",R4,l.tm))}${f(d.ws+" (1–4)",sel("i_ws",R4,l.ws))}${f(d.sw+" (1–4)",sel("i_sw",R4,l.sw))}
+  ${f(d.added+": "+d.aDrawn,nm("i_aD",0))}${f(d.added+": "+d.aFound,nm("i_aF",0))}
+  ${f(d.aFood+" ("+d.what+")",`<input id="i_fw" maxlength="40">`)}${f(d.aFood+" ("+d.amount+")",`<input id="i_fa" maxlength="20">`)}
+  ${f(d.notes,`<textarea id="i_n" maxlength="400"></textarea>`,true)}
+ </div><p class="hlp">${d.scale}</p>`}
+
+const kg=v=>(Math.round(v*10)/10).toString().replace(".",SET.lang==="en"?".":",");
+function harvestPanel(n){const c=CT(),r=harvestRows(n);if(!r.length)return"";
+ return `<div class="panel"><h3>${c.hvT}</h3>${r.map(([y,v])=>`<div class="hv-row"><b>${y}</b><span>${v==="split"?esc(c.hvSplit.replace("{y}",y)):`<span class="big">${kg(v)} kg</span>`}</span></div>`).join("")}</div>`}
+function weightPanel(n){const d=D(),t=T(),w=(DB.wt[n]||[]).slice().sort((a,b)=>a.d.localeCompare(b.d)),L=w[w.length-1],P=w[w.length-2];
+ const max=Math.max(1,...w.map(x=>x.l+x.r));
+ return `<div class="panel"><h3>${d.wt}</h3>
+  ${L?`<div class="wt-now"><div><div class="k">${d.wTot} · ${fmt(L.d)}</div><div class="big">${kg(L.l+L.r)} kg${P?trend(L.l+L.r,P.l+P.r):""}</div></div>
+     <div class="lr"><span>${d.wL} ${kg(L.l)} kg${P?trend(L.l,P.l):""}</span><span>${d.wR} ${kg(L.r)} kg${P?trend(L.r,P.r):""}</span></div></div>
+   <div class="wchart" role="img" aria-label="${d.wt}">${w.map(x=>`<div class="wcol"><div class="wbar" style="height:${Math.round((x.l+x.r)/max*100)}%"><i style="height:${Math.round(x.l/(x.l+x.r)*100)}%"></i></div>
+     <b>${kg(x.l+x.r)}</b><small>${x.d.slice(8,10)}.${x.d.slice(5,7)}.</small><small>${kg(x.l)}–${kg(x.r)}</small></div>`).join("")}</div>`:`<p class="empty">${d.noWt}</p>`}
+  ${miniForm("w",[["date",d.date],["num",d.wL+" (kg)"],["num",d.wR+" (kg)"]])}
+  <div class="actions" id="w-wrap"><button class="btn ghost" id="w-add">${d.addWt}</button></div></div>`}
+function varroaPanel(n){const d=D(),t=T(),trs=(DB.tr[n]||[]).slice().sort((a,b)=>b.d.localeCompare(a.d)),ws=(DB.wash[n]||[]).slice().sort((a,b)=>b.d.localeCompare(a.d));
+ return `<div class="panel"><h3>${d.varroa}</h3>
+  <div class="sub-h">${d.treat}</div>
+  ${trs.length?`<table class="trt"><tr><th>${d.date}</th><th>${d.tType}</th><th>${d.tAmt}</th><th>${d.tNote}</th></tr>
+   ${trs.map(r=>`<tr><td>${fmt(r.d)}</td><td>${esc(tx(r.type))}</td><td>${esc(tx(r.amt))}</td><td>${esc(tx(r.note))}</td></tr>`).join("")}</table>`:`<p class="empty">${d.noTreat}</p>`}
+  ${miniForm("t",[["date",d.date],["text",d.tType],["text",d.tAmt],["text",d.tNote]])}
+  <div class="actions" id="t-wrap"><button class="btn ghost" id="t-add">${d.addTreat}</button></div>
+  <div class="sub-h">${d.wash}</div>
+  ${ws.length?`<table class="trt"><tr><th>${d.date}</th><th>${d.wG}</th><th>${d.wM}</th></tr>
+   ${ws.map((r,i)=>{const hi=miteHigh(r),tr=hi&&treatedAfter(n,r);return `<tr class="${hi&&!tr?"warn":""}"><td>${fmt(r.d)}</td><td>${r.g} g</td><td><span class="${hi?"hi":""}">${r.m}</span>${ws[i+1]?trend(r.m,ws[i+1].m,-1):""}${tr?`<div class="treated">${ico("ok",14)} ${d.treatedOn} ${fmt(tr.d)}</div>`:""}</td></tr>`}).join("")}</table>`:`<p class="empty">${d.noWash}</p>`}
+  ${miniForm("m",[["date",d.date],["num",d.wG],["num",d.wM]])}
+  <div class="actions" id="m-wrap"><button class="btn ghost" id="m-add">${d.addWash}</button></div></div>`}
+function miniForm(p,fields){const t=T();return `<form id="${p}-f" class="mini"><div class="grid">${fields.map(([ty,lab],i)=>`<div><label for="${p}${i}">${lab}</label>${
+  ty==="date"?`<input type="date" id="${p}${i}" required value="${new Date().toISOString().slice(0,10)}">`:ty==="num"?`<input type="number" step="0.1" min="0" id="${p}${i}" required inputmode="decimal">`:`<input id="${p}${i}" maxlength="80"${i===1?" required":""}>`}</div>`).join("")}</div>
+  <div class="actions"><button class="btn" type="submit">${t.save}</button><button class="btn ghost" type="button" data-cancel="${p}">${t.cancel}</button></div></form>`}
+function wireMini(n){const t=T();
+ const save={w:v=>(DB.wt[n]=DB.wt[n]||[]).push({d:v[0],l:+v[1],r:+v[2]}),t:v=>(DB.tr[n]=DB.tr[n]||[]).push({d:v[0],type:v[1],amt:v[2],note:v[3]}),m:v=>(DB.wash[n]=DB.wash[n]||[]).push({d:v[0],g:+v[1],m:+v[2]})};
+ ["w","t","m"].forEach(p=>{const f=$(p+"-f");
+  $(p+"-add").onclick=()=>{f.classList.add("open");$(p+"-wrap").style.display="none";$(p+"0").focus()};
+  f.querySelector("[data-cancel]").onclick=()=>{f.classList.remove("open");$(p+"-wrap").style.display=""};
+  f.onsubmit=e=>{e.preventDefault();const v=[...f.querySelectorAll("input")].map(x=>x.value.trim());save[p](v);saveDB();drawBadges();const top=$("wb").scrollTop;openHive(n);$("wb").scrollTop=top;toast(t.saved)}})}
+
+function closeHive(){const wasBox=openView&&openView[0]==="box";openView=null;document.body.classList.remove("modal","boxmode","carmode");if(wasBox)boxLid(false);if(lastFocus&&lastFocus.focus)lastFocus.focus()}
+$("x").onclick=closeHive;
+$("bd").addEventListener("click",e=>{if(e.target.id==="bd")closeHive()});
+addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("modal"))closeHive()});
+function toast(msg){const t=$("toast");t.textContent=msg;t.style.display="block";setTimeout(()=>t.style.display="none",1600)}
+
+// ===== warning badges =====
+const PIX={
+ pq:["..bb....bb..","..bbb..bbb..","...bbbbbb...","....bbbb....","...kkkkkk...","..kyyyyyyk..",".kyyyooyyyk.",".kyyooooyyk.",".kyyyooyyyk.","..kyyyyyyk..","...kkkkkk...","............"],
+ queen:[".k...kk...k.","kyk.kyyk.kyk","kyykkyykkyyk","kyyyyyyyyyyk","kyryyyyyyryk","kyyyyRyyyyyk","kooooooooook","kooooooooook","kkkkkkkkkkkk","............"],
+ sting:["..ww....ww..",".www.kk.www.","..wkyyyyk...","..kkkkkkkk..","..yyyyyyyy..","..kkkkkkkk..","...yyyyyy...","...kkkkkk...","....yyyy....",".....kk.....",".....kk.....","......k....."],
+ mite:["............","..k......k..","...k.rr.k...","k..rrrrrr..k",".krrRrrRrrk.","k.rrrrrrrr.k",".krrrrrrrrk.","k..rrrrrr..k","...k.rr.k...","..k......k..","............"]};
+const PC={b:"#2f63d6",y:"#f2c230",o:"#c98a1a",r:"#8a2a14",R:"#d24a2a",k:"#2b1a0c",w:"#e8f4ff"};
+function pix(name,x,y,s){const m=PIX[name];const H=m.length;
+  return `<svg x="${x}" y="${y}" width="${s}" height="${s}" viewBox="0 ${(H-12)/2} 12 12" shape-rendering="crispEdges">`+
+  m.map((r,j)=>[...r].map((c,i)=>c==="."?"":`<rect x="${i}" y="${j}" width="1.02" height="1.02" fill="${PC[c]}"/>`).join("")).join("")+`</svg>`}
+function notch(x,y,w,h,n){return `${x},${y+n} ${x+n},${y+n} ${x+n},${y} ${x+w-n},${y} ${x+w-n},${y+n} ${x+w},${y+n} ${x+w},${y+h-n} ${x+w-n},${y+h-n} ${x+w-n},${y+h} ${x+n},${y+h} ${x+n},${y+h-n} ${x},${y+h-n}`}
+let bstyle=3;const bLayer=document.createElementNS(NS,"g");scene.appendChild(bLayer);
+function drawBadges(){
+  bLayer.innerHTML="";
+  HIVES.forEach(h0=>{ const h={...h0,flags:[...(SET.badges?flagsFor(h0.n):[]),...(SET.pq&&PRUEF[h0.n]?["pq"]:[])]}; if(!h.flags.length)return;
+    const [x,y,w]=h.box,cxm=x+w/2,S=bstyle===3?40:58,G=bstyle===3?5:8,n=h.flags.length;let s="";
+    if(bstyle===1){ // round coins
+      const tw=n*S+(n-1)*G;let bx=cxm-tw/2;const by=y-S-26;
+      h.flags.forEach(f=>{s+=`<polygon points="${notch(bx,by,S,S,12)}" fill="#2b1a0c"/><polygon points="${notch(bx+5,by+5,S-10,S-10,8)}" fill="#fff1c2"/>`+pix(f,bx+9,by+9,S-18);bx+=S+G});
+    } else if(bstyle===2){ // red alert bubble
+      const P=10,tw=n*(S-10)+(n-1)*4+P*2+34,bh=S+4;const bx=cxm-tw/2,by=y-bh-40;
+      s+=`<polygon points="${notch(bx,by,tw,bh,8)}" fill="#9c2a1a"/><polygon points="${notch(bx+5,by+5,tw-10,bh-10,5)}" fill="#fffdf0"/>`+
+         `<rect x="${cxm-10}" y="${by+bh-1}" width="20" height="10" fill="#9c2a1a"/><rect x="${cxm-4}" y="${by+bh+9}" width="8" height="8" fill="#9c2a1a"/>`+
+         `<rect x="${bx+P+6}" y="${by+12}" width="9" height="24" fill="#d22"/><rect x="${bx+P+6}" y="${by+40}" width="9" height="9" fill="#d22"/>`;
+      let ix=bx+P+26;h.flags.forEach(f=>{s+=pix(f,ix,by+7,S-10);ix+=S-6});
+    } else { // yellow warning plates like the sign
+      const tw=n*S+(n-1)*G;let bx=cxm-tw/2;const by=y-S-18;
+      h.flags.forEach(f=>{s+=`<rect x="${bx}" y="${by}" width="${S}" height="${S}" fill="#2b1a0c"/><rect x="${bx+4}" y="${by+4}" width="${S-8}" height="${S-8}" fill="${f==="pq"?"#dbe8ff":"#f2c230"}"/>`+
+        `<rect x="${bx+4}" y="${by+S-8}" width="${S-8}" height="4" fill="#b8860b"/><rect x="${bx+4}" y="${by+4}" width="${S-8}" height="3" fill="#ffe27a"/>`+pix(f,bx+6,by+6,S-12);bx+=S+G});
+    }
+    const g=document.createElementNS(NS,"g");g.setAttribute("class","bdg");g.innerHTML=s;
+    g.style.animationDelay=(h.n*0.13)+"s";g.addEventListener("click",()=>openHive(h.n));bLayer.appendChild(g);
+  });
+}
+drawBadges();
+function alertsHTML(h){if(!h.flags||!h.flags.length)return"";
+  return `<div class="alerts">${h.flags.map(f=>`<div class="alert">${pix(f,0,0,24)}${T().al[f]}</div>`).join("")}</div>`}
+
+// ===== secret settings (bottom of the sign post) =====
+const sec=document.createElementNS(NS,"rect");
+Object.entries({x:862,y:778,width:58,height:72,class:"secret",tabindex:-1,"aria-hidden":"true"}).forEach(([k,v])=>sec.setAttribute(k,v));
+sec.addEventListener("click",openSettings);scene.appendChild(sec);
+function applySet(){bLayer.style.display="";drawBadges()}
+function openSettings(){
+  if(!document.body.classList.contains("modal"))lastFocus=document.activeElement;
+  openView=["settings"];const t=T();
+  document.body.classList.add("modal");
+  $("wt").textContent=t.settings;$("wtr").textContent=t.secret;$("wsw").style.background="#6b4423";
+  $("st1").textContent=t.setSaved;$("st2").textContent="";$("x").setAttribute("aria-label",t.close);
+  $("wb").innerHTML=`
+    <div class="set-row"><div><div class="lbl">${t.lang}</div><div class="hlp">${t.langH}</div></div>
+      <div class="langs" role="group" aria-label="${t.lang}">
+        ${[["en","EN","English"],["de","DE","Deutsch"],["hu","HU","Magyar"]].map(([k,s,full])=>`<button class="lb" data-l="${k}" aria-pressed="${SET.lang===k}" title="${full}">${s}</button>`).join("")}
+      </div></div>
+    <div class="set-row"><div><div class="lbl">${t.badges}</div><div class="hlp">${t.badgesH}</div></div>
+      <button class="sw8" role="switch" id="s-badges" aria-checked="${SET.badges}" aria-label="${t.badges}"><span>${SET.badges?t.on:t.off}</span></button></div>
+    <div class="set-row"><div><div class="lbl">${t.pqSet}</div><div class="hlp">${t.pqSetH}</div></div>
+      <button class="sw8" role="switch" id="s-pq" aria-checked="${SET.pq}" aria-label="${t.pqSet}"><span>${SET.pq?t.on:t.off}</span></button></div>
+    <div class="actions"><button class="btn ghost" id="close">${t.close}</button></div>`;
+  $("s-pq").onclick=()=>{SET.pq=!SET.pq;saveSet();applySet();openSettings()};
+  $("s-badges").onclick=()=>{SET.badges=!SET.badges;saveSet();applySet();openSettings()};
+  document.querySelectorAll(".lb").forEach(b=>b.onclick=()=>{SET.lang=b.dataset.l;saveSet();applyLang();openSettings();document.querySelector(`.lb[data-l="${SET.lang}"]`).focus()});
+  $("close").onclick=closeHive;
+}
+function applyLang(){document.documentElement.lang=SET.lang;labelHives();renderWx();if(typeof labelNav==="function")labelNav();$("wx").title=T().city}
+applySet();
+
+
+// ===== places: bee yard / storage box / meadow =====
+let place=0;
+function go(i){place=Math.max(0,Math.min(2,i));$("track").style.transform=`translateX(${-place*100/3}%)`;
+  $("prev").hidden=place===0;$("next").hidden=place===2;labelNav()}
+function labelNav(){const t=T();$("carhs").setAttribute("aria-label",CARTX[SET.lang].car);$("prev").setAttribute("aria-label",t.prev+(place>0?": "+t.places[place-1]:""));
+  $("next").setAttribute("aria-label",t.next+(place<2?": "+t.places[place+1]:""));$("boxhs").setAttribute("aria-label",t.box)}
+$("prev").onclick=()=>go(place-1);$("next").onclick=()=>go(place+1);
+addEventListener("keydown",e=>{if(document.body.classList.contains("modal"))return;
+  if(e.key==="ArrowRight")go(place+1);if(e.key==="ArrowLeft")go(place-1)});
+let sX=null,sY=null;
+$("track").addEventListener("touchstart",e=>{sX=e.touches[0].clientX;sY=e.touches[0].clientY},{passive:true});
+$("track").addEventListener("touchend",e=>{if(sX==null)return;const dx=e.changedTouches[0].clientX-sX,dy=e.changedTouches[0].clientY-sY;
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5)go(place+(dx<0?1:-1));sX=null},{passive:true});
+
+// storage box inventory
+// storage box: t = "n" counter, "b" yes/no, "l" litres; q = null means not counted yet
+const INV_SEED=[{n:"Flachzarge",t:"n",q:null,note:""},{n:"Flache Honigrähmchen",t:"n",q:null,note:""},{n:"Werkzeugkiste",t:"b",q:false,note:""},
+  {n:"Flugloch",t:"n",q:null,note:""},{n:"Sirup",t:"l",q:null,note:""}];
+let inv;try{inv=JSON.parse(localStorage.getItem("beeyard-inv2"))}catch(e){}
+if(!Array.isArray(inv))inv=JSON.parse(JSON.stringify(INV_SEED));
+function saveInv(){try{localStorage.setItem("beeyard-inv2",JSON.stringify(inv))}catch(e){}}
+function openBox(keepForm){
+  if(!document.body.classList.contains("modal"))lastFocus=document.activeElement;
+  openView=["box"];const t=T();
+  document.body.classList.add("modal","boxmode");boxLid(true);
+  $("wt").textContent=t.box;$("wtr").textContent=t.boxSub;$("wsw").style.background="#1f7a6e";
+  $("st1").textContent=t.items(inv.length);$("st2").textContent=syncLabel();$("x").setAttribute("aria-label",t.close);
+  $("wb").innerHTML=`
+   <div class="panel">
+    <div class="inv-head"><span>${t.item}</span><span>${t.qty}</span></div>
+    <div class="inv">${inv.length?inv.map((it,i)=>{const ty=it.t||"n",fixed=i<INV_SEED.length&&it.n===INV_SEED[i].n;
+      const ctl=ty==="b"?`<button class="sw8" role="switch" data-b="${i}" aria-checked="${!!it.q}" aria-label="${esc(tx(it.n))}"><span>${it.q?t.yes:t.no}</span></button>`
+        :`<div class="qty"><button class="sq" data-m="${i}" aria-label="− ${esc(tx(it.n))}">−</button><input class="qin" data-v="${i}" type="number" min="0" step="${ty==="l"?0.5:1}" inputmode="decimal" value="${it.q??""}" placeholder="?" aria-label="${esc(tx(it.n))}">${ty==="l"?"<span class='unit'>L</span>":""}<button class="sq" data-p="${i}" aria-label="+ ${esc(tx(it.n))}">+</button></div>`;
+      return `<div class="inv-row ${ty==="b"?"brow":""}">
+       <div><div class="inv-name">${esc(tx(it.n))}</div>${it.note?`<div class="inv-note">${esc(tx(it.note))}</div>`:""}${it.q==null&&ty!=="b"?`<div class="inv-note">${t.notCounted}</div>`:""}</div>
+       ${ctl}
+       ${fixed?"<span></span>":`<button class="sq del" data-d="${i}" aria-label="${t.remove}: ${esc(it.n)}" title="${t.remove}">X</button>`}</div>`}).join(""):`<p class="empty">${t.invEmpty}</p>`}</div>
+   </div>
+   <div class="actions"><button class="btn" id="add">${t.addItem}</button><button class="btn ghost" id="close">${t.close}</button></div>
+   <form id="f"><div class="panel"><h3>${t.addItem.replace("+ ","")}</h3>
+     <div class="grid">
+       <div class="full"><label for="in">${t.itemName}</label><input id="in" required maxlength="80"></div>
+       <div><label for="iq">${t.qty}</label><input type="number" id="iq" min="0" value="1"></div>
+       <div><label for="inote">${t.note}</label><input id="inote" maxlength="80"></div>
+     </div>
+     <div class="actions"><button class="btn" type="submit">${t.save}</button><button class="btn ghost" type="button" id="cancel">${t.cancel}</button></div>
+   </div></form>`;
+  const wb=$("wb");
+  const stp=it=>it.t==="l"?0.5:1;
+  wb.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{const it=inv[b.dataset.p];it.q=(it.q||0)+stp(it);saveInv();reBox(b)});
+  wb.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const it=inv[b.dataset.m];it.q=Math.max(0,(it.q||0)-stp(it));saveInv();reBox(b)});
+  wb.querySelectorAll("[data-b]").forEach(b=>b.onclick=()=>{const it=inv[b.dataset.b];it.q=!it.q;saveInv();reBox(b)});
+  wb.querySelectorAll("[data-v]").forEach(x=>x.onchange=()=>{const it=inv[x.dataset.v];it.q=x.value===""?null:Math.max(0,parseFloat(x.value)||0);saveInv();
+    const top=$("wb").scrollTop;openBox();$("wb").scrollTop=top});
+  wb.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{const it=inv[b.dataset.d];if(confirm(t.confirmDel(it.n))){inv.splice(b.dataset.d,1);saveInv();openBox()}});
+  $("add").onclick=()=>{$("f").classList.add("open");$("add").style.display="none";$("f").scrollIntoView({block:"start"});$("in").focus()};
+  $("cancel").onclick=()=>{$("f").classList.remove("open");$("add").style.display=""};
+  $("close").onclick=closeHive;
+  $("f").onsubmit=e=>{e.preventDefault();const n=$("in").value.trim();if(!n)return;
+    inv.push({n,t:"n",q:Math.max(0,parseInt($("iq").value)||0),note:$("inote").value.trim()});saveInv();openBox();toast(t.itemAdded)};
+}
+function reBox(btn){const sel=["p","m","b"].map(k=>btn.dataset[k]!=null?`[data-${k}="${btn.dataset[k]}"]`:"").join("");
+  const top=$("wb").scrollTop;openBox();$("wb").scrollTop=top;const nb=document.querySelector(sel);if(nb)nb.focus()}
+$("boxhs").addEventListener("click",()=>openBox());
+$("boxhs").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openBox()}});
+
+// ===== meadow: car notebook + animals =====
+const CARTX={
+en:{hvT:"Honey harvest",hvSplit:"In {y} this was a new split",hvTot:"Total",tabH:"Honey",gBig:"Full colonies",gSplit:"Splits",heavy:"heaviest",light:"lightest",pDrone:"Drone colony",pNum:"Number",pPed:"Pedigree",tabP:"Test queens",pEmpty:"No test queens yet.",pFrom:"from",pOpen:"Open hive",pScores:"Latest scores",pBadge:"Test queen",car:"Car",carSub:"Notes & overview",tabW:"Weights",tabO:"Observations",tabT:"Forage & pollen",wCompare:"Latest weight per hive",wHist:"All weighings (total kg)",
+ obsAdd:"+ Observation",obsEmpty:"No observations yet.",obsPh:"What did you notice?",now:"Blooming now",next:"Coming next month",nectar:"Nectar",pol:"Pollen",hd:"Honeydew",
+ tNote:"Typical for the Vienna area. It can shift 1–3 weeks with the weather.",noForage:"Hardly any forage. The colonies sit in the winter cluster.",
+ src:"Live sources",s1:"Pollen forecast for Austria",s2:"What's flowering now (observer reports)",s3:"Austrian beekeepers' association",srcNote:"External sites, opens in a new tab.",
+ legend:"L dark, R light"},
+de:{hvT:"Honigernte",hvSplit:"{y} war das ein neuer Ableger",hvTot:"Gesamt",tabH:"Honig",gBig:"Wirtschaftsvölker",gSplit:"Ableger",heavy:"am schwersten",light:"am leichtesten",pDrone:"Drohnenvolk",pNum:"Nummer",pPed:"Abstammung",tabP:"Prüfköniginnen",pEmpty:"Noch keine Prüfköniginnen.",pFrom:"von",pOpen:"Volk öffnen",pScores:"Letzte Bewertung",pBadge:"Prüfkönigin",car:"Auto",carSub:"Notizen & Überblick",tabW:"Gewichte",tabO:"Beobachtungen",tabT:"Tracht & Pollen",wCompare:"Letztes Gewicht je Volk",wHist:"Alle Wägungen (gesamt kg)",
+ obsAdd:"+ Beobachtung",obsEmpty:"Noch keine Beobachtungen.",obsPh:"Was ist dir aufgefallen?",now:"Blüht jetzt",next:"Nächsten Monat",nectar:"Nektar",pol:"Pollen",hd:"Honigtau",
+ tNote:"Typisch für den Raum Wien. Kann sich je nach Wetter um 1–3 Wochen verschieben.",noForage:"Kaum Tracht. Die Völker sitzen in der Wintertraube.",
+ src:"Aktuelle Quellen",s1:"Pollenprognose für Österreich",s2:"Was gerade blüht (Beobachtungsmeldungen)",s3:"Biene Österreich, Imkereidachverband",srcNote:"Externe Seiten, öffnen in neuem Tab.",
+ legend:"L dunkel, R hell"},
+hu:{hvT:"Mézszüret",hvSplit:"{y}-ban ez egy új műraj volt",hvTot:"Összesen",tabH:"Méz",gBig:"Teljes családok",gSplit:"Műrajok",heavy:"legnehezebb",light:"legkönnyebb",pDrone:"Herecsalád",pNum:"Szám",pPed:"Származás",tabP:"Tesztanyák",pEmpty:"Még nincs tesztanya.",pFrom:"tenyésztő:",pOpen:"Család megnyitása",pScores:"Utolsó értékelés",pBadge:"Tesztanya",car:"Autó",carSub:"Jegyzetek és áttekintés",tabW:"Súlyok",tabO:"Megfigyelések",tabT:"Hordás és virágpor",wCompare:"Utolsó súly családonként",wHist:"Minden mérés (össz. kg)",
+ obsAdd:"+ Megfigyelés",obsEmpty:"Még nincs megfigyelés.",obsPh:"Mit vettél észre?",now:"Most virágzik",next:"Jövő hónapban",nectar:"Nektár",pol:"Virágpor",hd:"Mézharmat",
+ tNote:"Bécs környékére jellemző. Az időjárástól függően 1–3 héttel eltolódhat.",noForage:"Alig van hordás. A családok telelő fürtben ülnek.",
+ src:"Friss források",s1:"Pollenelőrejelzés Ausztriára",s2:"Mi virágzik most (megfigyelői jelentések)",s3:"Osztrák méhészszövetség",srcNote:"Külső oldalak, új lapon nyílnak meg.",
+ legend:"B sötét, J világos"}};
+const CT=()=>CARTX[SET.lang];
+// plants: [de,en,hu,flags N/P/H]
+const PL={hasel:["Hasel","Hazel","Mogyoró","P"],schnee:["Schneeglöckchen","Snowdrop","Hóvirág","NP"],winterling:["Winterling","Winter aconite","Téltemető","NP"],
+ krokus:["Krokus","Crocus","Krókusz","NP"],salweide:["Salweide","Goat willow","Kecskefűz","NP"],kornel:["Kornelkirsche","Cornelian cherry","Húsos som","NP"],
+ blaustern:["Blaustern","Squill","Csillagvirág","NP"],obst:["Obstblüte (Kirsche, Marille, Apfel)","Fruit blossom (cherry, apricot, apple)","Gyümölcsfák (cseresznye, kajszi, alma)","NP"],
+ loewenzahn:["Löwenzahn","Dandelion","Pitypang","NP"],ahorn:["Ahorn","Maple","Juhar","NP"],raps:["Raps","Rapeseed","Repce","NP"],robinie:["Robinie (Akazie)","Black locust","Akác","N"],
+ kastanie:["Rosskastanie","Horse chestnut","Vadgesztenye","NP"],weissdorn:["Weißdorn","Hawthorn","Galagonya","NP"],linde:["Linde","Lime tree","Hárs","N"],
+ brombeere:["Brombeere","Blackberry","Szeder","NP"],phacelia:["Phacelia","Phacelia","Mézontófű","NP"],klee:["Klee","Clover","Here","NP"],edelkastanie:["Edelkastanie","Sweet chestnut","Szelídgesztenye","NP"],
+ sonnenblume:["Sonnenblume","Sunflower","Napraforgó","NP"],wald:["Waldtracht","Forest honeydew","Erdei mézharmat","H"],buchweizen:["Buchweizen","Buckwheat","Hajdina","NP"],
+ senf:["Senf (Zwischenfrucht)","Mustard (cover crop)","Mustár (köztes)","NP"],goldrute:["Goldrute","Goldenrod","Aranyvessző","NP"],springkraut:["Drüsiges Springkraut","Himalayan balsam","Bíbor nebáncsvirág","NP"],
+ heide:["Heidekraut","Heather","Csarab","NP"],efeu:["Efeu","Ivy","Borostyán","NP"],astern:["Herbstastern","Autumn asters","Őszirózsa","NP"],
+ christrose:["Christrose","Christmas rose","Hunyor","P"],zaubernuss:["Zaubernuss","Witch hazel","Varázsmogyoró","P"]};
+const MON={1:["christrose","zaubernuss"],2:["hasel","schnee","winterling","krokus"],3:["salweide","krokus","kornel","blaustern","hasel"],
+ 4:["obst","loewenzahn","ahorn","salweide","raps"],5:["raps","robinie","kastanie","weissdorn","loewenzahn"],6:["linde","robinie","brombeere","phacelia","klee","edelkastanie"],
+ 7:["linde","sonnenblume","phacelia","klee","wald"],8:["sonnenblume","buchweizen","senf","goldrute","springkraut","heide"],9:["efeu","goldrute","springkraut","senf","astern"],
+ 10:["efeu","astern","senf"],11:["efeu"],12:[]};
+const SOURCES=[["https://www.polleninformation.at","s1"],["https://www.phenowatch.at","s2"],["https://www.biene-oesterreich.at","s3"]];
+let carTab="w";
+let OBS;try{OBS=JSON.parse(localStorage.getItem("beeyard-obs"))}catch(e){}
+if(!Array.isArray(OBS))OBS=[];
+function saveObs(){try{localStorage.setItem("beeyard-obs",JSON.stringify(OBS))}catch(e){}}
+const li=SET=>({en:1,de:0,hu:2})[SET.lang];
+function monthName(m){return new Date(2026,m-1,1).toLocaleDateString({en:"en-GB",de:"de-AT",hu:"hu-HU"}[SET.lang],{month:"long"})}
+function plantList(m){const c=CT(),L=MON[m]||[];if(!L.length)return `<p class="empty">${c.noForage}</p>`;
+ return `<div class="plants">${L.map(k=>{const p=PL[k];return `<div class="plant"><span>${esc(p[li(SET)])}</span><span class="tags">${
+   p[3].includes("N")?`<i class="tg n">${c.nectar}</i>`:""}${p[3].includes("P")?`<i class="tg p">${c.pol}</i>`:""}${p[3].includes("H")?`<i class="tg h">${c.hd}</i>`:""}</span></div>`}).join("")}</div>`}
+function carBody(){const c=CT(),t=T();
+ if(carTab==="w"){
+  const rows=HIVES.map(h=>{const w=(DB.wt[h.n]||[]).slice().sort((a,b)=>a.d.localeCompare(b.d));const L=w[w.length-1];return {h,w,L,P:w[w.length-2],tot:L?L.l+L.r:-1}});
+  const groups=[rows.filter(r=>!(r.h.n in HIVEMADE)),rows.filter(r=>r.h.n in HIVEMADE)].map(g=>g.sort((a,b)=>b.tot-a.tot));
+  const dates=[...new Set(rows.flatMap(r=>r.w.map(x=>x.d)))].sort();
+  const bars=(g,title)=>{const max=Math.max(1,...g.map(r=>r.tot));const has=g.filter(r=>r.L);
+    return `<div class="sub-h">${title}</div><div class="cmp">${g.map((r,i)=>{const {h,L,P}=r;if(!L)return `<div class="cmp-row"><span class="cn">${esc(h.name)}</span><span>–</span></div>`;
+     const tag=has.length>1&&r===has[0]?`<i class="hl h">${c.heavy}</i>`:has.length>1&&r===has[has.length-1]?`<i class="hl l">${c.light}</i>`:"";
+     return `<div class="cmp-row"><span class="cn"><i class="sw2" style="background:${h.color}"></i>${esc(h.name)}</span>
+      <span class="cbar"><i class="cl" style="width:${L.l/max*100}%"></i><i class="cr" style="width:${L.r/max*100}%"></i></span>
+      <span class="cv">${kg(L.l+L.r)} kg${P?trend(L.l+L.r,P.l+P.r):""}${tag}</span></div>`}).join("")}</div>`};
+  const hist=g=>g.map(({h,w})=>`<tr><td>${esc(h.name)}</td>${dates.map((d,i)=>{const x=w.find(v=>v.d===d),px=w.find(v=>v.d===dates[i-1]);return `<td>${x?kg(x.l+x.r)+(px?trend(x.l+x.r,px.l+px.r):""):"–"}</td>`}).join("")}</tr>`).join("");
+  return `<div class="panel"><h3>${c.wCompare}</h3>${bars(groups[0],c.gBig)}${bars(groups[1],c.gSplit)}<p class="hlp">${c.legend}</p></div>
+   <div class="panel"><h3>${c.wHist}</h3><div class="tscroll"><table class="trt"><tr><th></th>${dates.map(d=>`<th>${fmt(d).slice(0,6)}</th>`).join("")}</tr>
+     ${hist(groups[0])}<tr class="grp"><td colspan="${dates.length+1}">${c.gSplit}</td></tr>${hist(groups[1])}</table></div></div>`}
+ if(carTab==="h"){
+  return Object.keys(HARVEST).sort((a,b)=>b-a).map(y=>{const Y=HARVEST[y];
+   const big=HIVES.filter(h=>typeof Y[h.n]==="number").sort((a,b)=>Y[b.n]-Y[a.n]),spl=HIVES.filter(h=>Y[h.n]==="split");
+   const tot=big.reduce((s,h)=>s+Y[h.n],0),max=Math.max(1,...big.map(h=>Y[h.n]));
+   return `<div class="panel"><h3>${c.hvT} ${y}</h3>
+    <div class="hv-tot">${c.hvTot}: <b>${kg(tot)} kg</b></div>
+    <div class="sub-h">${c.gBig}</div><div class="cmp">${big.map(h=>`<div class="cmp-row"><span class="cn"><i class="sw2" style="background:${h.color}"></i>${esc(h.name)}</span>
+      <span class="cbar"><i class="cr" style="width:${Y[h.n]/max*100}%"></i></span><span class="cv">${kg(Y[h.n])} kg</span></div>`).join("")}</div>
+    ${spl.length?`<div class="sub-h">${c.gSplit}</div>${spl.map(h=>`<div class="hv-row"><span class="cn"><i class="sw2" style="background:${h.color}"></i>${esc(h.name)}</span><span>${esc(c.hvSplit.replace("{y}",y))}</span></div>`).join("")}`:""}</div>`}).join("")}
+ if(carTab==="p"){const d=D(),ks=Object.keys(PRUEF).map(Number);
+  return `<div class="panel"><h3>${c.tabP}</h3>${ks.length?ks.map(n=>{const h=HIVES[n-1],i=queenInfo(n),l=sorted(n)[0];
+   return `<div class="pq"><div class="pq-top"><span class="cn"><i class="sw2" style="background:${h.color}"></i><b>${esc(h.name)}</b></span>
+     <span>${i[1]&&QCOL[i[1]]?`<i class="qdot" style="background:${QCOL[i[1]]}"></i> ${d.colors[i[1]]}`:""}${i[2]!=null?` · ${d.no_}${i[2]}`:""}${i[0]?` · ${i[0]}`:""}</span></div>
+     <div class="pq-from">${c.pFrom} ${PRUEF[n].from?esc(PRUEF[n].from):"?"}</div>${pedHTML(n)}
+     ${l?`<div class="pq-sc"><span class="k">${c.pScores} ${fmt(l.d)}</span>
+       <div class="rate ${l.tm!=null&&l.tm<=2?"warn":""}"><span>${d.tm}</span>${pips(l.tm,4)}<span>${l.tm??""}</span></div>
+       <div class="rate"><span>${d.ws}</span>${pips(l.ws,4)}<span>${l.ws??""}</span></div>
+       <div class="rate"><span>${d.sw}</span>${pips(l.sw,4)}<span>${l.sw??""}</span></div></div>`:""}
+     <div class="actions"><button class="btn ghost" data-open="${n}">${c.pOpen}: ${esc(h.name)}</button></div></div>`}).join(""):`<p class="empty">${c.pEmpty}</p>`}</div>`}
+ if(carTab==="o"){const L=OBS.slice().sort((a,b)=>b.d.localeCompare(a.d));
+  return `<div class="panel"><h3>${c.tabO}</h3>${L.length?L.map(o=>`<div class="entry"><span class="d">${fmt(o.d)}</span><div>${esc(o.t)}</div></div>`).join(""):`<p class="empty">${c.obsEmpty}</p>`}
+   <form id="o-f" class="mini open"><div class="grid"><div><label for="o0">${t.date}</label><input type="date" id="o0" required value="${new Date().toISOString().slice(0,10)}"></div>
+   <div class="full"><label for="o1">${c.tabO}</label><textarea id="o1" required maxlength="1000" placeholder="${esc(c.obsPh)}"></textarea></div></div>
+   <div class="actions"><button class="btn" type="submit">${t.save}</button></div></form></div>`}
+ const m=new Date().getMonth()+1,n=m%12+1;
+ return `<div class="panel"><h3>${c.now}: ${monthName(m)}</h3>${plantList(m)}</div>
+  <div class="panel"><h3>${c.next}: ${monthName(n)}</h3>${plantList(n)}</div>
+  <p class="hlp">${c.tNote}</p>
+  <div class="panel"><h3>${c.src}</h3>${SOURCES.map(([u,k])=>`<div class="src"><a href="${u}" target="_blank" rel="noopener">${esc(c[k])}</a><small>${u.replace("https://","")}</small></div>`).join("")}
+   <p class="hlp">${c.srcNote}</p></div>`}
+function pedHTML(n){const q=PRUEF[n],c=CT();if(!q)return"";const r=[];
+  if(q.drone)r.push(`<span><em>${c.pDrone}</em> Nr. ${esc(q.drone)}</span>`);if(q.num)r.push(`<span><em>${c.pNum}</em> ${esc(q.num)}</span>`);
+  if(q.ped&&q.ped.length)r.push(`<span><em>${c.pPed}</em> ${q.ped.map(esc).join(", ")}</span>`);return r.length?`<div class="ped">${r.join("")}</div>`:""}
+function openCar(){
+  if(!document.body.classList.contains("modal"))lastFocus=document.activeElement;
+  openView=["car"];const c=CT(),t=T();
+  document.body.classList.add("modal","carmode");
+  $("wt").textContent=c.car;$("wtr").textContent=c.carSub;$("wsw").style.background="#b8bec4";
+  $("st1").textContent="";$("st2").textContent=syncLabel();$("x").setAttribute("aria-label",t.close);
+  $("wb").innerHTML=`<div class="tabs" role="tablist">${[["w",c.tabW],["h",c.tabH],["o",c.tabO],["p",c.tabP],["t",c.tabT]].map(([k,l])=>`<button class="tab" role="tab" data-t="${k}" aria-selected="${carTab===k}">${l}</button>`).join("")}</div>
+    <div id="carbody">${carBody()}</div><div class="actions"><button class="btn ghost" id="close">${t.close}</button></div>`;
+  $("wb").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{carTab=b.dataset.t;openCar();$("wb").querySelector(`.tab[data-t="${carTab}"]`).focus()});
+  $("wb").querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{document.body.classList.remove("carmode");openHive(+b.dataset.open)});
+  $("close").onclick=closeHive;
+  const of=$("o-f");if(of)of.onsubmit=e=>{e.preventDefault();const tx=$("o1").value.trim();if(!tx)return;OBS.push({d:$("o0").value,t:tx});saveObs();openCar();toast(t.saved)};
+}
+$("carhs").addEventListener("click",openCar);
+$("carhs").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();openCar()}});
+
+
+// ===== seasons + weather =====
+const IMGC={spring:"images/box-closed-spring.jpg",summer:"images/box-closed-summer.jpg",autumn:"images/box-closed-autumn.jpg",winter:"images/box-closed-winter.jpg",rain:"images/box-closed-rain.jpg"};
+let curImg="autumn";
+function boxLid(open){$("bgbox").setAttribute("href",(open?IMGB:IMGC)[curImg])}
+const IMGB={spring:"images/box-open-spring.jpg",summer:"images/box-open-summer.jpg",autumn:"images/box-open-autumn.jpg",winter:"images/box-open-winter.jpg",rain:"images/box-open-rain.jpg"};
+const IMGM={spring:"images/meadow-spring.jpg",summer:"images/meadow-summer.jpg",autumn:"images/meadow-autumn.jpg",winter:"images/meadow-winter.jpg",rain:"images/meadow-rain.jpg"};
+const IMG={spring:"images/hives-spring.jpg",summer:"images/hives-summer.jpg",
+  autumn:"images/hives-autumn.jpg",winter:"images/hives-winter.jpg",rain:"images/hives-rain.jpg"};
+function seasonNow(){const m=new Date().getMonth()+1;return m>=3&&m<=5?"spring":m<=8&&m>=6?"summer":m>=9&&m<=11?"autumn":"winter"}
+const ICONS={ // 8x8 pixel icons: . empty, y yellow, w white, g grey, b blue
+ sun:["...y....",".y.y..y.","..yyyy..","yyyyyyy.","..yyyy..",".y.yy.y.","....y...","........"],
+ cloud:["........","...ww...","..wwww..",".wwwwww.","wwwwwwww","wwwwwwww","........","........"],
+ rain:["...gg...","..gggg..",".gggggg.","gggggggg","........",".b..b..b","b..b..b.","........"],
+ snow:["...gg...","..gggg..",".gggggg.","gggggggg","........",".w..w..w","...w..w.",".w......"]};
+const COL={y:"#f2a900",w:"#fffdf0",g:"#8a8a8a",b:"#2f63d6"};
+function icon(name){$("wxi").innerHTML=ICONS[name].map((r,y)=>[...r].map((c,x)=>c==="."?"":`<rect x="${x}" y="${y}" width="1" height="1" fill="${COL[c]}"/>`).join("")).join("")}
+let scene_="",fxMode="none";
+function setScene(img,mode){curImg=img;$("bgimg").setAttribute("href",IMG[img]);boxLid(openView&&openView[0]==="box");$("bgmead").setAttribute("href",IMGM[img]);fxMode=mode;initFx()}
+function applyWeather(code,temp){
+  const s=seasonNow();let img=s,mode="none",ic="sun",txt="sun";
+  const rain=(code>=51&&code<=67)||(code>=80&&code<=82)||code>=95, snow=(code>=71&&code<=77)||code===85||code===86;
+  if(snow){img="winter";mode="snow";ic="snow";txt="snow"}
+  else if(rain){img="rain";mode="rain";ic="rain";txt=code>=95?"storm":"rain"}
+  else if(code>=1&&code<=48){ic="cloud";txt=code<=2?"part":code===3?"cloud":"fog"}
+  setScene(img,mode);icon(ic);WX={temp,txt};renderWx();
+}
+let WX={temp:null,txt:"sun"},offline=false;
+function renderWx(){$("wxt").textContent=WX.temp==null?"--°C":Math.round(WX.temp)+"°C";
+  $("wxc").textContent=T().city+", "+(offline&&WX.temp==null?T().wx.pre:T().wx[WX.txt])}
+// particles
+const cv=$("fx"),cx=cv.getContext("2d");let parts=[],raf=null;
+const still=matchMedia("(prefers-reduced-motion:reduce)").matches;
+function initFx(){cv.width=Math.ceil(innerWidth/3);cv.height=Math.ceil(innerHeight/3);cv.style.imageRendering="pixelated";
+  const n=fxMode==="rain"?140:fxMode==="snow"?110:0;
+  parts=Array.from({length:n},()=>({x:Math.random()*cv.width,y:Math.random()*cv.height,v:fxMode==="rain"?3+Math.random()*2:.3+Math.random()*.5,p:Math.random()*6}));
+  if(!raf)raf=requestAnimationFrame(tick)}
+function tick(){cx.clearRect(0,0,cv.width,cv.height);
+  for(const q of parts){
+    if(fxMode==="rain"){cx.fillStyle="#cfe3ffaa";cx.fillRect(q.x|0,q.y|0,1,4);q.y+=q.v;q.x-=q.v*.15}
+    else{cx.fillStyle="#fff";cx.fillRect(q.x|0,q.y|0,q.p>3?2:1,q.p>3?2:1);q.y+=q.v;q.x+=Math.sin((q.y+q.p*10)/12)*.3}
+    if(q.y>cv.height){q.y=-5;q.x=Math.random()*cv.width} if(q.x<0)q.x+=cv.width}
+  raf=still?null:requestAnimationFrame(tick)}
+addEventListener("resize",initFx);
+// live weather (works on the live site; the Claude preview blocks outside requests)
+applyWeather(0,null);
+fetch("https://api.open-meteo.com/v1/forecast?latitude=48.21&longitude=16.37&current=temperature_2m,weather_code&timezone=Europe%2FVienna")
+ .then(r=>r.json()).then(d=>applyWeather(d.current.weather_code,d.current.temperature_2m))
+ .catch(()=>{offline=true;renderWx()});
+// preview: tap the weather sign to cycle scenes
+const DEMO=[["spring","none",0,14],["summer","none",0,27],["autumn","none",3,11],["winter","none",0,-2],["winter","snow",73,-4],["rain","rain",63,9]];
+let di=-1;
+$("wx").addEventListener("click",()=>{di=(di+1)%DEMO.length;const [img,mode,code,temp]=DEMO[di];
+  applyWeather(code,temp);setScene(img,mode)});
+
+
+// ===== sync with the shared Google Sheet =====
+let syncState=API_URL?"load":"local",remoteReady=false,lastSynced={},syncTimer=null;
+function syncLabel(){const t=T();return syncState==="local"?t.preview:syncState==="ok"?t.syOk:syncState==="busy"?t.syBusy:syncState==="load"?t.syLoad:t.syOff}
+function showSync(){const e=$("st2");if(e&&document.body.classList.contains("modal"))e.textContent=syncLabel()}
+function pack(){const o={};for(let n=1;n<=9;n++){o["insp:"+n]=JSON.stringify(DB.insp[n]||[]);o["tr:"+n]=JSON.stringify(DB.tr[n]||[]);
+  o["wt:"+n]=JSON.stringify(DB.wt[n]||[]);o["wash:"+n]=JSON.stringify(DB.wash[n]||[])}o.inv=JSON.stringify(inv);o.obs=JSON.stringify(OBS);return o}
+function unpack(r){const g=k=>{try{return r[k]?JSON.parse(r[k]):null}catch(e){return null}};
+  for(let n=1;n<=9;n++){[["insp",DB.insp],["tr",DB.tr],["wt",DB.wt],["wash",DB.wash]].forEach(([p,o])=>{const v=g(p+":"+n);if(v)o[n]=v})}
+  const i=g("inv");if(Array.isArray(i))inv=i;const b=g("obs");if(Array.isArray(b))OBS=b;
+  try{localStorage.setItem("beeyard19",JSON.stringify(DB));localStorage.setItem("beeyard-inv2",JSON.stringify(inv));localStorage.setItem("beeyard-obs",JSON.stringify(OBS))}catch(e){}}
+function queueSync(){if(!API_URL||!remoteReady)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushSync,700)}
+async function pushSync(){const now=pack(),set={};Object.keys(now).forEach(k=>{if(now[k]!==lastSynced[k])set[k]=now[k]});
+  if(!Object.keys(set).length)return;syncState="busy";showSync();
+  try{const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({set})});
+    const j=await r.json();if(!j.ok)throw new Error(j.error);Object.assign(lastSynced,set);syncState="ok"}
+  catch(e){syncState="off";setTimeout(queueSync,15000)}showSync()}
+async function loadRemote(){if(!API_URL)return;
+  try{const r=await fetch(API_URL);const j=await r.json();if(!j.ok)throw 0;const d=j.data||{};
+    const empty=!Object.keys(d).length;if(!empty){unpack(d);lastSynced={...d}}remoteReady=true;syncState="ok";
+    drawBadges();const v=openView;if(v){if(v[0]==="hive")openHive(v[1]);else if(v[0]==="box")openBox();else if(v[0]==="car")openCar()}
+    if(empty)pushSync();   // first run: upload the current data
+  }catch(e){syncState="off";setTimeout(loadRemote,20000)}showSync()}
+const _sDB=saveDB,_sInv=saveInv,_sObs=saveObs;
+saveDB=function(){_sDB();queueSync()};saveInv=function(){_sInv();queueSync()};saveObs=function(){_sObs();queueSync()};
+loadRemote();
+
+applyLang();go(0);
+</script>
+</body>
+</html>
